@@ -540,13 +540,13 @@ test('Soleil : capteurs réels, durée en minutes, date explicite des prochains 
   assert.match(html,/−7 min/);
   assert.match(html,/12h05/);
   assert.match(html,/Aube/);assert.match(html,/Lever/);assert.match(html,/Coucher/);assert.match(html,/Crépuscule/);
-  assert.doesNotMatch(html,/solar-mask-card/);
+  assert.doesNotMatch(html.slice(html.indexOf('<ha-card')),/<solar-mask-card/);
 });
 test('Soleil : durée manquante non inventée, masque solaire demandé si capteur absent',()=>{
   const card=new Card();card.setConfig({format:'sun-home'});
   card.hass={states:{'sun.sun':{state:'above_horizon',attributes:{}}}};
   const html=card.shadowRoot.innerHTML;
-  assert.match(html,/Choisis une entité Solar Mask/);
+  assert.match(html,/Installez Solar Mask Card/);
   assert.match(html,/—/);assert.doesNotMatch(html,/NaN/);
 });
 test('Radars : aucune URL par défaut, donc aucun iframe ni adresse imposée',()=>{

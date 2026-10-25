@@ -360,8 +360,8 @@
       '<div class="sun-time">'+icon(symbol)+'<span>'+name+'</span><b>'+esc(sunTime(attributes[attr]))+'</b></div>').join('')+'</div>':'';
     const {diagram}=sunMaskIds(hass,c);
     const visual=opt(c,'sun_show_diagram')?'<div class="solar-chart-host">'+
-      (diagram?'<solar-mask-card></solar-mask-card>':
-        '<p class="sun-note">Choisis une entité Solar Mask (sensor.…_solar_diagram) pour afficher le diagramme solaire.</p>')+
+      (diagram&&customElements.get('solar-mask-card')?'<solar-mask-card></solar-mask-card>':
+        '<p class="sun-note">Installez Solar Mask Card et sélectionnez une entité sensor.…_solar_diagram pour afficher le diagramme solaire.</p>')+
       '</div>':'';
     return wrap(header+metrics+times+visual,c,'sun-home');
   }
