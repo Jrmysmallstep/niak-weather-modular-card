@@ -1,12 +1,12 @@
 /**
- * Niak Weather Modular Card — 0.2.8-beta.1
+ * Niak Weather Modular Card — 0.2.9-beta.1
  * Standalone dashboard card consuming the original Niak Weather websocket view.
  * Inspired by Niak Weather by Niakman13 (MIT); see LICENSE and README.md.
  * No Python integration replacement, cloud calls or external JavaScript dependencies.
  */
 (() => {
   'use strict';
-  const VERSION = '0.2.8-beta.1';
+  const VERSION = '0.2.9-beta.1';
   const ELEMENT = 'niak-weather-modular-card';
   const FORMATS = [
     ['full','Carte complète Niak Weather','Carte officielle complète, personnalisable, avec Lune facultative'],
@@ -573,6 +573,21 @@
     .full-native-wrapper>niak-weather-card{display:block;order:0;min-width:0}
     .full-native-wrapper>.full-native-moon{display:block;order:1;min-width:0}
     .full-native-wrapper.moon-before>.full-native-moon{order:-1}
+
+    /* A separate, responsive grid for Soleil, Lune and Radars. Never relocate Lit nodes. */
+    .full-native-wrapper>.full-addon-grid{
+      display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0;width:100%;
+      align-items:start;order:1;box-sizing:border-box
+    }
+    .full-native-wrapper>.full-addon-grid.addons-before{order:-1}
+    .full-addon-grid>niak-weather-modular-card{display:block;min-width:0;width:100%;max-width:100%}
+    @container (min-width:560px){
+      .full-native-wrapper>.full-addon-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @container (min-width:860px){
+      .full-native-wrapper>.full-addon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+
     .full-native-wrapper>.full-native-sun,.full-native-wrapper>.full-native-radars{display:block;min-width:0}
 
     .sun-home,.radar-module{gap:14px}
@@ -635,9 +650,6 @@
     }
     @container(max-width:300px){.sun-compact .sun-times{grid-template-columns:repeat(2,minmax(0,1fr))}}
     .full-native-wrapper{container-type:inline-size}
-    .full-native-wrapper>.full-native-sun:not(.in-today){width:calc((100% - 32px)/3);max-width:100%;align-self:flex-start}
-    @container(max-width:859px){.full-native-wrapper>.full-native-sun:not(.in-today){width:calc((100% - 16px)/2)}}
-    @container(max-width:559px){.full-native-wrapper>.full-native-sun:not(.in-today){width:100%}}
     .note{color:var(--nw-fg2);font-size:12px;line-height:1.5;margin:0}.bulletin{font-size:15px;line-height:1.65;margin:0}.periods{display:grid;gap:9px;padding-top:10px;border-top:1px solid var(--nw-line)}.periods>div{display:flex;gap:9px;align-items:flex-start}.periods ha-icon{color:var(--nw-wind)}.periods span{display:grid;gap:2px}.periods small{color:var(--nw-fg2);font-size:12px}.inner.events{padding:12px 16px 16px;gap:10px}.inner.events>.label{margin:0 4px}.inner.events>niak-frise{display:block;min-width:0}.events{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;padding:4px 2px 8px;scroll-snap-type:x proximity}.event{display:flex;gap:8px;align-items:flex-start;min-width:165px;max-width:260px;flex:1 0 170px;border:1px solid var(--nw-line);border-radius:12px;background:color-mix(in srgb,var(--nw-wind) 5%,var(--nw-card-surface));padding:12px;scroll-snap-align:start}.event ha-icon{color:var(--nw-wind);--mdc-icon-size:20px}.event>div{display:flex;flex-direction:column;gap:5px}.event b{font-size:12px;line-height:1.5;font-weight:650}.event.alert2,.event.alert3{border-color:var(--warning-color,#edb65e)}
     .current{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(circle at 95% 0%,color-mix(in srgb,var(--nw-wind) 15%,transparent),transparent 60%),var(--nw-card-surface)}.sky-layer{position:absolute;inset:0;pointer-events:none;opacity:.32;z-index:0}.current>:not(.sky-layer){position:relative;z-index:1}.current-top,.summary-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.current-top strong,.summary-head strong{font-size:19px}.date{font-size:12px;color:var(--nw-fg2)}.current-grid{display:flex;align-items:center;justify-content:space-between;gap:14px}.condition{display:flex;gap:11px;align-items:center;min-width:0}.condition>div{display:flex;flex-direction:column;gap:4px}.condition b{font-size:15px}.condition .weather-icon{--mdc-icon-size:40px;color:var(--nw-wind)}.temp{font-size:47px;line-height:1.15;font-weight:770;white-space:nowrap}.temp span{font-size:18px;font-weight:450}.current .source{max-width:100%;align-self:flex-start}.summary{padding:15px;display:grid;gap:8px}.summary-parts{display:grid;gap:8px}.summary .inner{padding:15px 16px;border:1px solid var(--nw-line);border-radius:14px}.summary .summary-head{padding:6px 9px 12px}.summary-head span{font-size:12px;color:var(--nw-fg2)}
     .rain-next{display:grid;gap:9px}.rain-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:end;min-height:120px}.rain-days>.label{grid-column:1/-1}.rain-days>div{display:flex;flex-direction:column;gap:5px;justify-content:flex-end;align-items:center;height:85px;font-size:10px;min-width:0}.rain-days i{display:block;background:var(--nw-rain);border-radius:4px 4px 0 0;width:35%;min-height:2px}.rain-days b{white-space:nowrap;font-size:9px}
@@ -747,14 +759,25 @@
     // The border setting applies to both Today's and Tomorrow's air/pollen panels.
     if(c.full_air_border!==true)rules.push(
       '.fm-section .panels-two>.nw-panel{border:0!important;box-shadow:none!important;background:transparent!important}');
-    if(c.full_show_sun===true)rules.push(
-      '.fm-section[aria-labelledby$="-today"] .fm-body.niak-sun-air-row{grid-template-columns:minmax(0,1fr)!important;align-items:start}',
-      '.fm-body.niak-sun-air-row>.full-native-sun{grid-column:1;order:1;min-width:0;width:100%}',
-      '.fm-body.niak-sun-air-row>.panels-two{grid-column:1;order:2;width:100%!important;min-width:0}',
-      '.fm-body.niak-sun-air-row>:not(.full-native-sun):not(.panels-two){grid-column:1/-1;order:0}',
-      '@container(min-width:560px){.fm-section[aria-labelledby$="-today"] .fm-body.niak-sun-air-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}}',
-      '@container(min-width:860px){.fm-section[aria-labelledby$="-today"] .fm-body.niak-sun-air-row{grid-template-columns:repeat(3,minmax(0,1fr))!important}}');
+    /* On wide dashboards the official Ressenti panel and the compact Air/Pollens
+       form two regular cells. Previously a full-row rule forced them apart. */
+    if(c.full_compact_air!==false && c.full_air_position!=='after_measures')rules.push(
+      '.fm-section[aria-labelledby$="-today"] .fm-body:has(>.nw-panel):has(>.panels-two){display:grid;grid-template-columns:minmax(0,1fr)!important;align-items:start;gap:16px}',
+      '.fm-section[aria-labelledby$="-today"] .fm-body:has(>.nw-panel):has(>.panels-two)>.nw-panel{grid-column:1;order:0;min-width:0}',
+      '.fm-section[aria-labelledby$="-today"] .fm-body:has(>.nw-panel):has(>.panels-two)>.panels-two{grid-column:1;order:1;width:100%!important;min-width:0}',
+      '.fm-section[aria-labelledby$="-today"] .fm-body:has(>.nw-panel):has(>.panels-two)>.grid3{grid-column:1/-1;order:2;min-width:0}',
+      '.fm-section[aria-labelledby$="-today"] .fm-body:has(>.nw-panel):has(>.panels-two)>.nw-chips{grid-column:1/-1;order:3}',
+      '@container (min-width:560px){.fm-section[aria-labelledby$="-today"] .fm-body:has(>.nw-panel):has(>.panels-two){grid-template-columns:repeat(2,minmax(0,1fr))!important}.fm-section[aria-labelledby$="-today"] .fm-body:has(>.nw-panel):has(>.panels-two)>.panels-two{grid-column:2!important}}',
+      '@container (min-width:860px){.fm-section[aria-labelledby$="-today"] .fm-body:has(>.nw-panel):has(>.panels-two){grid-template-columns:repeat(3,minmax(0,1fr))!important}}');
     return rules.join('\n');
+  }
+
+  const FULL_MODULES=['sun','moon','radars'];
+  function orderedFullModules(c){
+    const fromArray=Array.isArray(c.full_modules_order)?c.full_modules_order.filter(id=>FULL_MODULES.includes(id)):[];
+    if(fromArray.length)return [...new Set([...fromArray,...FULL_MODULES])];
+    const rank=id=>Number(c['full_'+id+'_order'])||({sun:1,radars:2,moon:3}[id]);
+    return [...FULL_MODULES].sort((a,b)=>rank(a)-rank(b));
   }
   function fullEditor(c){
     if(c.format!=='full')return '';
@@ -781,13 +804,15 @@
       check('full_show_atmo_tomorrow','Air et pollens de demain',opt(c,'full_show_atmo_tomorrow'))+
       '<label class="toggle"><input type="checkbox" name="full_compact_air" '+(c.full_compact_air!==false?'checked':'')+'/>Air extérieur + Pollens : largeur d’une carte</label>'+
       '<label class="toggle"><input type="checkbox" name="full_air_border" '+(c.full_air_border===true?'checked':'')+'/>Afficher la bordure Air / Pollens (aujourd’hui et demain)</label>'+
+      select('full_air_position','Position Air extérieur + Pollens',
+        [['with_comfort','À côté de Ressenti'],['after_measures','Après Pluie / Vent / Pression']],
+        c.full_air_position||'with_comfort')+
       '</fieldset>'+ranks('banner_blocks','Bandeau — ordre et visibilité',FULL_BANNER)+
       ranks('today_blocks','Aujourd’hui — ordre et visibilité',FULL_TODAY)+
       ranks('forecast_blocks','Prévisions — ordre et visibilité',FULL_FORECAST)+
       '<fieldset><legend>Carte Lune en option</legend>'+
       check('full_show_moon','Ajouter la carte Lune',c.full_show_moon===true)+
-      (c.full_show_moon===true?select('full_moon_position','Position de la carte Lune',
-        [['after','Après la carte météo'],['before','Avant la carte météo']],c.full_moon_position||'after'):'')+
+      '<p class="hint">La Lune rejoint la grille des trois modules facultatifs ci-dessous.</p>'+
       '<span class="hint">Lunar Phase est nécessaire uniquement pour afficher la Lune.</span></fieldset>';
   }
   class NiakModularCard extends HTMLElement {
@@ -850,28 +875,6 @@
     }
 
 
-    _syncFullSun(native,wrapper){
-      const c=this._config,sun=this._fullSunElement,root=native?.shadowRoot;
-      const body=root?.querySelector?.('.fm-section[aria-labelledby$="-today"] .fm-body');
-      const inline=c.full_show_sun===true&&(c.full_sun_position===undefined||c.full_sun_position==='today');
-      // Leave native Lit-managed grid3 and panels-two in their own DOM positions.
-      root?.querySelectorAll?.('.fm-body.niak-sun-air-row')?.forEach(el=>{
-        if(!inline||el!==body)el.classList.remove('niak-sun-air-row');
-      });
-      if(!sun||c.full_show_sun!==true){body?.classList?.remove('niak-sun-air-row');return;}
-      if(inline){
-        if(!body){sun.remove?.();return;} // A folded Today section must also hide sunlight.
-        if(sun.parentElement!==body)body.appendChild(sun);
-        body.classList.add('niak-sun-air-row');
-        sun.classList?.add('in-today');
-        if(sun.style)sun.style.order='1';
-      }else{
-        body?.classList?.remove('niak-sun-air-row');
-        if(sun.parentElement!==wrapper)wrapper.appendChild(sun);
-        sun.classList?.remove('in-today');
-        if(sun.style)sun.style.order=(c.full_sun_position==='before'?-10:10)+Math.max(1,Math.min(3,Number(c.full_sun_order)||1));
-      }
-    }
     _renderFullOfficial(){
       const c=this._config;
       if(!customElements.get('niak-weather-card')){
@@ -906,49 +909,51 @@
         if(!style){style=document.createElement('style');style.id='niak-full-custom-style';root.appendChild(style);}
         const css=fullOriginalCSS(c);if(style.textContent!==css)style.textContent=css;
       };
-      apply();if(native.updateComplete?.then)native.updateComplete.then(()=>{apply();this._syncFullSun(native,wrapper);}).catch(()=>{});
-      const addModule=(kind,enabled,config,position,rank)=>{
-        let card=kind==='sun'?(this._fullSunElement||wrapper.querySelector?.('.full-native-sun')):wrapper.querySelector?.('.full-native-'+kind);
-        if(enabled){
-          if(!card){card=document.createElement(ELEMENT);card.className='full-native-'+kind;wrapper.appendChild(card);}if(kind==='sun')this._fullSunElement=card;
-          const hash=JSON.stringify(config);
-          if(card._fullExtraKey!==hash){card.setConfig(config);card._fullExtraKey=hash;}
-          if(this._hass)card.hass=this._hass;
-          if(card.style)card.style.order=(position==='before'?-10:10)+Math.max(1,Math.min(3,Number(rank)||1));
-        }else if(card){if(card.remove)card.remove();if(kind==='sun')this._fullSunElement=null;}
-      };
-      addModule('sun',c.full_show_sun===true,{
-        type:'custom:'+ELEMENT,format:'sun-home',background_mode:c.background_mode,
-        show_title:true,show_date:c.show_date,show_source:c.show_source,
-        sun_difference_entity:c.sun_difference_entity,sun_duration_entity:c.sun_duration_entity,
-        sun_diagram_entity:c.sun_diagram_entity,sun_elevation_entity:c.sun_elevation_entity,
-        sun_show_times:c.sun_show_times,sun_show_diagram:c.sun_show_diagram,
-        sun_diagram_height:c.sun_diagram_height,sun_compact:c.sun_compact,sun_mask_border:c.sun_mask_border
-      },c.full_sun_position,c.full_sun_order||1);
-      addModule('radars',c.full_show_radars===true,{
-        type:'custom:'+ELEMENT,format:'radars',background_mode:c.background_mode,
-        show_title:true,show_source:c.show_source,radar_layout:c.radar_layout,
-        radar_url_current:c.radar_url_current,radar_url_forecast:c.radar_url_forecast,
-        radar_height:c.radar_height
-      },c.full_radars_position,c.full_radars_order||2);
-      this._syncFullSun(native,wrapper);
-      let moon=wrapper.querySelector?.('.full-native-moon');
-      if(c.full_show_moon===true){
-        if(!moon){moon=document.createElement(ELEMENT);moon.className='full-native-moon';wrapper.appendChild(moon);}
-        const moonConfig={
-          type:'custom:'+ELEMENT,format:'moon',background_mode:c.background_mode,
-          show_title:true,show_date:false,show_source:c.show_source,show_stats:true,
-          show_details:true,show_chart:true,
-          moon_entity:c.moon_entity,moon_position:c.moon_position||'left',
-          moon_visual_mode:c.moon_visual_mode||'original',moon_image_url:c.moon_image_url,
-          moon_southern_hemisphere:c.moon_southern_hemisphere===true
+      apply();if(native.updateComplete?.then)native.updateComplete.then(apply).catch(()=>{});
+      const enabled={sun:c.full_show_sun===true,moon:c.full_show_moon===true,radars:c.full_show_radars===true};
+      const active=FULL_MODULES.filter(id=>enabled[id]);
+      let grid=wrapper.querySelector?.('.full-addon-grid');
+      if(active.length&&!grid){
+        grid=document.createElement('div');
+        grid.className='full-addon-grid';
+        wrapper.appendChild(grid);
+      }
+      if(grid){
+        const location=c.full_modules_position==='before'?'before':'after';
+        grid.classList.toggle('addons-before',location==='before');
+        const configs={
+          sun:{type:'custom:'+ELEMENT,format:'sun-home',background_mode:c.background_mode,
+            show_title:true,show_date:c.show_date,show_source:c.show_source,
+            sun_difference_entity:c.sun_difference_entity,sun_duration_entity:c.sun_duration_entity,
+            sun_diagram_entity:c.sun_diagram_entity,sun_elevation_entity:c.sun_elevation_entity,
+            sun_show_times:c.sun_show_times,sun_show_diagram:c.sun_show_diagram,
+            sun_diagram_height:c.sun_diagram_height,sun_compact:c.sun_compact,sun_mask_border:c.sun_mask_border},
+          moon:{type:'custom:'+ELEMENT,format:'moon',background_mode:c.background_mode,
+            show_title:true,show_date:false,show_source:c.show_source,show_stats:true,
+            show_details:true,show_chart:true,moon_entity:c.moon_entity,
+            moon_position:c.moon_position||'left',moon_visual_mode:c.moon_visual_mode||'original',
+            moon_image_url:c.moon_image_url,moon_southern_hemisphere:c.moon_southern_hemisphere===true},
+          radars:{type:'custom:'+ELEMENT,format:'radars',background_mode:c.background_mode,
+            show_title:true,show_source:c.show_source,
+            radar_layout:c.radar_layout||'tabs',
+            radar_url_current:c.radar_url_current,radar_url_forecast:c.radar_url_forecast,
+            radar_height:c.radar_height}
         };
-        const mk=JSON.stringify(moonConfig);
-        if(moon._fullMoonKey!==mk){moon.setConfig(moonConfig);moon._fullMoonKey=mk;}
-        if(this._hass)moon.hass=this._hass;
-        if(moon.style)moon.style.order=(c.full_moon_position==='before'?-10:10)+Math.max(1,Math.min(3,Number(c.full_moon_order)||3));
-      }else if(moon)moon.remove();
-      wrapper.classList.toggle('moon-before',c.full_show_moon===true&&c.full_moon_position==='before');
+        orderedFullModules(c).forEach((kind,rank)=>{
+          let card=grid.querySelector?.('.full-native-'+kind);
+          if(!enabled[kind]){card?.remove?.();return;}
+          if(!card){
+            card=document.createElement(ELEMENT);
+            card.className='full-native-'+kind;
+            grid.appendChild(card);
+          }
+          const key=JSON.stringify(configs[kind]);
+          if(card._fullExtraKey!==key){card.setConfig(configs[kind]);card._fullExtraKey=key;}
+          if(this._hass)card.hass=this._hass;
+          if(card.style)card.style.order=rank;
+        });
+        if(!active.length)grid.remove();
+      }
     }
     _updateSolarChart(){
       const c=this._config,{diagram,elevation}=sunMaskIds(this._hass,c);
@@ -1087,15 +1092,14 @@
     const addonOrder=full?'<fieldset><legend>Modules supplémentaires</legend>'+
       '<label class="toggle"><input type="checkbox" name="full_show_sun" '+(c.full_show_sun===true?'checked':'')+'/>Ajouter le module Soleil</label>'+
       '<label class="toggle"><input type="checkbox" name="full_show_radars" '+(c.full_show_radars===true?'checked':'')+'/>Ajouter les radars de pluie</label>'+
-      (c.full_show_sun===true?
-        select('full_sun_position','Soleil — emplacement',[['today','Dans Aujourd’hui (3 max par ligne)'],['after','Après la météo'],['before','Avant la météo']],'today')+
-        select('full_sun_order','Soleil — ordre',[['1','1er'],['2','2e'],['3','3e']],'1'):'')+
-      (c.full_show_radars===true?
-        select('full_radars_position','Radars — emplacement',[['after','Après la météo'],['before','Avant la météo']],'after')+
-        select('full_radars_order','Radars — ordre',[['1','1er'],['2','2e'],['3','3e']],'2'):'')+
-      (c.full_show_moon===true?
-        select('full_moon_order','Lune — ordre',[['1','1re'],['2','2e'],['3','3e']],'3'):'')+
-      '<p class="hint">Lune, Soleil et Radars peuvent être placés avant ou après la météo officielle, avec un ordre de 1 à 3.</p></fieldset>':'';
+      select('full_modules_position','Position de la ligne Soleil / Lune / Radars',
+        [['after','Sous la météo complète'],['before','Au-dessus de la météo complète']],
+        c.full_modules_position||'after')+
+      orderedFullModules(c).map((id,index)=>select('full_modules_order_'+index,
+        ['1re carte','2e carte','3e carte'][index],
+        [['sun','Soleil / Solar Mask'],['moon','Lune'],['radars','Radars météo']],id)
+        .replace('name="full_modules_order_'+index+'"','data-module-order="'+index+'"')).join('')+
+      '<p class="hint">Jusqu’à trois cartes par ligne sur PC, deux sur tablette et une sur mobile. Choisir une carte à une position échange automatiquement son ordre.</p></fieldset>':'';
     return addonOrder+sunlight+radars;
   }
   class NiakModularEditor extends HTMLElement {
@@ -1103,7 +1107,14 @@
     setConfig(config){const cc=normalize(config);this._config={...DEFAULTS,...(EXTRA_FORMATS.has(cc.format)?{show_title:false}:{}),...cc};this._render();}
     set hass(hass){if(this._hass?.connection===hass?.connection)return;this._hass=hass;if(this._config.format==='moon'){this._render();return;}if(!this._loadedEntries&&hass?.connection?.sendMessagePromise){this._loadedEntries=true;hass.connection.sendMessagePromise({type:'niak_weather/entries'}).then(entries=>{this._entries=Array.isArray(entries)?entries:[];this._render();}).catch(()=>{});}}
     get hass(){return this._hass;}
-    _change(event){const el=event.target;let c={...this._config};if(el.dataset.fullGroup){
+    _change(event){const el=event.target;let c={...this._config};if(el.dataset.moduleOrder!==undefined){
+      const index=Number(el.dataset.moduleOrder),id=el.value;
+      if(index>=0&&index<3&&FULL_MODULES.includes(id)){
+        const order=orderedFullModules(c),old=order.indexOf(id);
+        [order[index],order[old]]=[order[old],order[index]];
+        c.full_modules_order=order;
+      }
+    }else if(el.dataset.fullGroup){
       const group=el.dataset.fullGroup,item=el.dataset.fullBlock;
       if(FULL_CHOICES[group]?.some(([id])=>id===item)){
         const def=group==='banner_blocks'?FULL_BANNER:group==='today_blocks'?FULL_TODAY:FULL_FORECAST;
