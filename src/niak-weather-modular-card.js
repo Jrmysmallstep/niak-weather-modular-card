@@ -1,12 +1,12 @@
 /**
- * Niak Weather Modular Card — 0.2.1-beta.1
+ * Niak Weather Modular Card — 0.2.2-beta.1
  * Standalone dashboard card consuming the original Niak Weather websocket view.
  * Inspired by Niak Weather by Niakman13 (MIT); see LICENSE and README.md.
  * No Python integration replacement, cloud calls or external JavaScript dependencies.
  */
 (() => {
   'use strict';
-  const VERSION = '0.2.1-beta.1';
+  const VERSION = '0.2.2-beta.1';
   const ELEMENT = 'niak-weather-modular-card';
   const FORMATS = [
     ['overview','Synthèse / En ce moment','Conditions, min/max, bulletin, tendance et événements'],
@@ -162,8 +162,10 @@
           (source(n.temperatureSource||n.source,c)?'<div class="ov-source">'+source(n.temperatureSource||n.source,c)+'</div>':'')+'</div>',
       sky=opt(c,'show_animations')&&customElements.get('niak-weather-sky')?'<div class="sky-layer ov-sky"><niak-weather-sky></niak-weather-sky></div>':'',
       events=opt(c,'show_events')?'<div class="ov-events">'+eventList(v,{...c,show_title:true})+'</div>':'';
-    return '<section class="overview">'+sky+title+'<div class="ov-grid '+(c.temperature_position==='left'?'temp-left':'temp-right')+'"><div class="ov-copy">'+
-      (alerts?'<div class="chips">'+alerts+'</div>':'')+bulletin+'</div>'+current+'</div>'+events+'</section>';
+    const copy='<div class="ov-copy">'+(alerts?'<div class="chips">'+alerts+'</div>':'')+bulletin+'</div>';
+    const isLeft=c.temperature_position==='left';
+    return '<section class="overview">'+sky+title+'<div class="ov-grid '+(isLeft?'temp-left':'temp-right')+'">'+
+      (isLeft?current+copy:copy+current)+'</div>'+events+'</section>';
   }
   function moonVisual(fraction,waxing,south,age,phase,c){
     const svg=moonDisk(fraction,waxing,south),mode=['original','generated','image','svg'].includes(c.moon_visual_mode)?c.moon_visual_mode:'original';
@@ -374,12 +376,29 @@
     .ov-trend ha-icon{--mdc-icon-size:16px;color:var(--nw-heat)}
     .ov-source .source{max-width:100%;display:block}
     .ov-events .inner.events{padding:3px 0}
-    @container(max-width:630px){.overview{padding:15px 16px}.ov-grid{grid-template-columns:1fr;gap:18px}
-      .ov-now{grid-row:1;align-items:flex-start;text-align:left}.ov-condition{justify-content:flex-start}
-      .ov-grid.temp-left{grid-template-columns:1fr}
-      .ov-grid.temp-left .ov-now{grid-column:1;grid-row:1}
-      .ov-grid.temp-left .ov-copy{grid-column:1;grid-row:2}
-      .ov-copy{grid-row:2}.ov-temp{font-size:48px}.ov-bulletin p{font-size:14px}}
+    /* Tablet & mobile: preserve the two genuinely different positions. */
+    @container(max-width:630px){
+      .overview{padding:15px 16px}
+      .ov-grid{grid-template-columns:minmax(0,1fr) minmax(130px,44%);gap:12px}
+      .ov-grid.temp-left{grid-template-columns:minmax(130px,44%) minmax(0,1fr)}
+      .ov-grid.temp-left .ov-now{grid-column:1;grid-row:1;align-items:flex-start;text-align:left}
+      .ov-grid.temp-left .ov-copy{grid-column:2;grid-row:1}
+      .ov-grid.temp-left .ov-condition{justify-content:flex-start}
+      .ov-grid.temp-right .ov-now{grid-column:2;grid-row:1;align-items:flex-end;text-align:right}
+      .ov-grid.temp-right .ov-copy{grid-column:1;grid-row:1}
+      .ov-grid.temp-right .ov-condition{justify-content:flex-end}
+      .ov-temp{font-size:clamp(34px,11cqw,48px);letter-spacing:-.8px}
+      .ov-temp span{font-size:clamp(14px,4cqw,20px)}
+      .ov-condition b{font-size:clamp(12px,3.5cqw,16px)}
+      .ov-bulletin p{font-size:13px}
+    }
+    @container(max-width:350px){
+      .ov-grid,.ov-grid.temp-left{grid-template-columns:minmax(0,1fr)}
+      .ov-grid.temp-left .ov-now,.ov-grid.temp-right .ov-now{grid-column:1;grid-row:1}
+      .ov-grid.temp-left .ov-copy,.ov-grid.temp-right .ov-copy{grid-column:1;grid-row:2}
+      .ov-grid.temp-left .ov-now{align-items:flex-start;text-align:left}
+      .ov-grid.temp-right .ov-now{align-items:flex-end;text-align:right}
+    }
     .moon-photo{width:100%;max-width:160px;height:auto;aspect-ratio:1;object-fit:contain;filter:drop-shadow(0 8px 15px #0004)}
     .moon-fallback{display:none;width:100%;height:100%;place-items:center}
     .moon-fallback.show{display:grid}

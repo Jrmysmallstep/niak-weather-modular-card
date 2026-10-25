@@ -319,3 +319,27 @@ test('Synthèse : position du bloc température proposée dans l’éditeur',()=
   assert.match(html,/value="left" selected/);
   assert.match(html,/Droite \(par défaut\)/);
 });
+
+
+test('Synthèse : choix gauche/droite déplace vraiment le bloc dans le DOM',()=>{
+  const weather={...view,now:{...view.now,temperature:13.3,trend:2.4},days:[{today:true,low:8,high:13}],bulletin:{summary:'Bulletin test'}};
+  for(const [side,tempFirst] of [['left',true],['right',false]]){
+    const card=new Card();card.setConfig({format:'overview',temperature_position:side});card._view=weather;card._render();
+    const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+    const temp=html.indexOf('<div class="ov-now">'),bulletin=html.indexOf('<div class="ov-copy">');
+    assert.ok(temp>-1&&bulletin>-1);
+    assert.equal(temp<bulletin,tempFirst,"Ordre des blocs : "+side);
+    assert.match(html,new RegExp('ov-grid temp-'+side));
+    assert.match(html,/13,3/);assert.match(html,/↓ 8°/);assert.match(html,/↑ 13°/);assert.match(html,/\+2,4 °C\/h/);
+  }
+});
+
+test('Synthèse : les deux positions sont maintenues dans la règle responsive',()=>{
+  const start=script.indexOf('@container(max-width:630px)'),end=script.indexOf('@container(max-width:350px)');
+  assert.ok(start>0&&end>start);
+  const css=script.slice(start,end);
+  assert.match(css,/\.ov-grid\.temp-left\{grid-template-columns:minmax\(130px,44%\)/);
+  assert.match(css,/\.ov-grid\.temp-right \.ov-now\{grid-column:2;grid-row:1/);
+  assert.match(css,/\.ov-grid\.temp-left \.ov-now\{grid-column:1;grid-row:1/);
+  assert.doesNotMatch(css,/\.ov-grid\{grid-template-columns:1fr/);
+});
