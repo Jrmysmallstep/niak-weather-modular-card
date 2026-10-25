@@ -456,7 +456,7 @@ test('Carte complète : éditeur expose l’ordre des blocs, fond, sources, date
     'moon_visual_mode','moon_entity']){
     assert.ok(html.includes(key),key);
   }
-  assert.match(html,/Carte Niak Weather complète/);
+  assert.match(html,/Carte complète Niak Weather/);
   assert.match(html,/Avant la carte météo/);
 });
 
@@ -476,4 +476,50 @@ test('Carte complète : ne crée pas de seconde souscription météo',()=>{
   assert.match(script,/fullOriginalConfig\(c\)/);
   assert.match(script,/if\(c\.full_show_moon===true\)/);
   assert.match(script,/fullOriginalCSS\(c\)/);
+});
+
+
+test('Carte complète : transmet réellement les options à Niak officiel et ajoute la Lune',()=>{
+  const existing=registered.get('niak-weather-card');
+  registered.set('niak-weather-card',class {});
+  const oldCreate=ctx.document.createElement;
+  let stylesheet=null, moon=null, seen=null, before=null, updates=0;
+  const native={
+    shadowRoot:{querySelector(id){return id==='#niak-full-custom-style'?stylesheet:null;},
+      appendChild(style){stylesheet=style;}},
+    setConfig(config){seen=config;updates++;}
+  };
+  const wrapper={
+    querySelector(id){if(id==='niak-weather-card')return native;if(id==='.full-native-moon')return moon;return null;},
+    appendChild(child){moon=child;},
+    classList:{toggle(name,value){if(name==='moon-before')before=value;}}
+  };
+  try{
+    ctx.document.createElement=function(tag){return tag==='style'?{textContent:'',id:''}:oldCreate(tag);};
+    const c=new Card();
+    c.setConfig({format:'full',temperature_position:'left',show_date:false,show_source:false,
+      background_mode:'transparent',full_show_moon:true,full_moon_position:'before',
+      today_blocks:['pressure','wind'],forecast_blocks:['days'],banner_blocks:['events']});
+    c.shadowRoot.querySelector=id=>id==='.full-native-wrapper'?wrapper:null;
+    const hass={states:{'sensor.lunar_phase':{state:'full_moon',attributes:{moon_age:14.7,illumination_fraction:100}}},connection:{}};
+    c.hass=hass;
+    assert.equal(seen.type,'custom:niak-weather-card');
+    assert.equal(seen.format,'full');
+    assert.equal(seen.today_blocks.join(','),'pressure,wind');
+    assert.equal(seen.forecast_blocks.join(','),'days');
+    assert.equal(seen.banner_blocks.join(','),'events');
+    assert.equal(updates,1,'ne reconfigure pas une carte Lit à chaque mise à jour');
+    assert.equal(before,true);
+    assert.equal(moon._config.format,'moon');
+    assert.equal(moon.hass,hass);
+    assert.match(stylesheet.textContent,/nw-now/);
+    assert.match(stylesheet.textContent,/transparent/);
+    assert.match(stylesheet.textContent,/display:none/);
+    c.setConfig({...c._config,full_show_moon:false});
+    assert.equal(seen.format,'full');
+    assert.equal(before,false);
+  }finally{
+    ctx.document.createElement=oldCreate;
+    if(existing)registered.set('niak-weather-card',existing);else registered.delete('niak-weather-card');
+  }
 });
