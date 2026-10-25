@@ -343,3 +343,36 @@ test('Synthèse : les deux positions sont maintenues dans la règle responsive',
   assert.match(css,/\.ov-grid\.temp-left \.ov-now\{grid-column:1;grid-row:1/);
   assert.doesNotMatch(css,/\.ov-grid\{grid-template-columns:1fr/);
 });
+
+
+test('Synthèse : compact (par défaut) conserve la répartition sur une rangée',()=>{
+  const card=new Card();card.setConfig({format:'overview',temperature_position:'right'});
+  card._view={...view,bulletin:{summary:'Bulletin de test'},now:{...view.now,temperature:13.5}};
+  card._render();const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/ov-grid layout-compact temp-right/);
+  assert.ok(html.indexOf('<div class="ov-copy">')<html.indexOf('<div class="ov-now">'));
+});
+
+test('Synthèse : mode classique affiche le bulletin sous la température à gauche ou droite',()=>{
+  for(const side of ['left','right']){
+    const card=new Card();card.setConfig({format:'overview',overview_layout:'classic',temperature_position:side});
+    card._view={...view,now:{...view.now,temperature:13.5,trend:0.1},days:[{today:true,low:8,high:13}],bulletin:{summary:'Bulletin sous la température'}};
+    card._render();const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+    assert.match(html,new RegExp('ov-grid layout-classic temp-'+side));
+    assert.ok(html.indexOf('<div class="ov-now">')<html.indexOf('<div class="ov-copy">'));
+    assert.match(html,/13,5/);assert.match(html,/↓ 8°/);assert.match(html,/↑ 13°/);assert.match(html,/\+0,1 °C\/h/);
+    assert.match(html,/Bulletin sous la température/);
+  }
+});
+
+test('Synthèse : éditeur propose les deux dispositions indépendamment de gauche/droite',()=>{
+  const editor=Card.getConfigElement();editor.setConfig({format:'overview',overview_layout:'classic',temperature_position:'left'});
+  const html=editor.shadowRoot.innerHTML;
+  assert.match(html,/name="overview_layout"/);
+  assert.match(html,/value="classic" selected/);
+  assert.match(html,/name="temperature_position"/);
+  assert.match(html,/value="left" selected/);
+  const start=script.indexOf('.ov-grid.layout-classic{display:flex;flex-direction:column');
+  assert.ok(start>=0);
+  assert.match(script.slice(start,start+1600),/\.ov-grid\.layout-classic\.temp-right \.ov-now\{align-self:flex-end/);
+});
