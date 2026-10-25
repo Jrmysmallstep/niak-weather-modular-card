@@ -2,12 +2,12 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.2.5-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.2.6-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Les formats météo **ne remplacent pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
 
-## 15 formats dans le sélecteur
+## 17 formats dans le sélecteur
 
 | Format YAML | Carte |
 |---|---|
@@ -26,6 +26,8 @@ Les formats météo **ne remplacent pas l'intégration [Niak Weather](https://gi
 | `pollen-forecast` | Prévisions de pollens pour demain |
 | `air` | Air extérieur complet, indice et polluants personnalisables |
 | `moon` | Lune — phase, illumination, lever/coucher, âge, distance et prochaines phases |
+| `sun-home` | Soleil & Ensoleillement : Solar Mask, horaires, durée et variation |
+| `radars` | Deux radars de pluie avec URL libres, côte à côte, superposés ou par onglets |
 
 Chaque carte est disponible dans le sélecteur **Ajouter une carte** sous le nom **Niak Modular · …**. Toutes utilisent le composant `custom:niak-weather-modular-card` et un paramètre `format`.
 
@@ -96,7 +98,62 @@ entry_id: "identifiant_de_l_entree_niak"
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
 
-## Carte complète officielle avec options supplémentaires — 0.2.5-beta.1
+## Soleil & Ensoleillement et Radars — 0.2.6-beta.1
+
+Ces deux cartes existent **indépendamment** et peuvent être activées comme sections facultatives dans la carte complète `format: full`. Niak Weather continue de produire seul le bulletin du jour, exclusivement à partir des prévisions de son fournisseur.
+
+### Soleil & Ensoleillement
+
+```yaml
+type: custom:niak-weather-modular-card
+format: sun-home
+background_mode: glass
+sun_difference_entity: sensor.difference_de_soleil
+sun_duration_entity: sensor.sunterrasse_sun_duration
+sun_show_times: true
+sun_show_diagram: true
+# sun_diagram_entity: sensor.votre_zone_solar_diagram
+# sun_elevation_entity: sensor.votre_zone_sun_effective_elevation
+sun_diagram_height: 320
+```
+
+Les heures proviennent des **prochains événements** de `sun.sun` : aube, lever, coucher, crépuscule. Si l'événement est celui de demain, il est indiqué comme tel, pour éviter de prétendre qu'il s'est produit aujourd'hui. La durée d'ensoleillement de la maison provient d'un capteur de zone Solar Mask en **minutes**, sans confusion avec la durée théorique du jour. La carte `custom:solar-mask-card` du projet [38decibel](https://github.com/38decibel/Solar-Mask-Card) est réutilisée **si elle est déjà installée**, ainsi que son intégration Solar Mask.
+
+### Radars de pluie
+
+```yaml
+type: custom:niak-weather-modular-card
+format: radars
+background_mode: transparent
+radar_layout: grid   # grid, stack, tabs
+radar_height: 420
+radar_url_current: ""
+radar_url_forecast: ""
+```
+
+**Aucune adresse radar n'est préremplie.** Il faut saisir soi-même les deux URL dans l'éditeur ou en YAML. Sans URL, aucune page externe n'est chargée. Les URL doivent commencer par `http://` ou `https://`. Certains fournisseurs empêchent l'intégration iframe ; ce blocage dépend du site, pas de Home Assistant.
+
+### Ajouter les deux sections dans la carte complète
+
+```yaml
+type: custom:niak-weather-modular-card
+format: full
+full_show_sun: true
+full_sun_position: after
+full_sun_order: "1"
+full_show_radars: true
+full_radars_position: after
+full_radars_order: "2"
+full_show_moon: true
+full_moon_position: after
+full_moon_order: "3"
+radar_url_current: ""
+radar_url_forecast: ""
+```
+
+Les modules supplémentaires sont **désactivés par défaut** afin de préserver les tableaux de bord existants. Leur emplacement et leur ordre peuvent être modifiés dans l'éditeur visuel.
+
+## Carte complète officielle avec options supplémentaires — 0.2.6-beta.1
 
 Le format `full` **embarque directement la carte originale Niak Weather** (`custom:niak-weather-card`) pour conserver son rendu, ses animations, la frise automatique, ses graphiques et ses sections repliables. L'intégration Niak Weather et sa ressource frontend doivent être chargées. Nos réglages n'altèrent pas le dépôt original.
 
@@ -130,7 +187,7 @@ La carte permet de déplacer et masquer les éléments des trois listes dans son
 
 Les styles additionnels reposent sur les classes CSS de la version actuelle de Niak Weather. Si la carte officielle change de structure dans une mise à jour future, certaines options visuelles pourront demander une adaptation, sans affecter ses données.
 
-## Carte Air extérieur complète — 0.2.5-beta.1
+## Carte Air extérieur complète — 0.2.6-beta.1
 
 La carte `format: air` reprend l'indice de qualité de l'air de Niak Weather avec une jauge segmentée colorée (échelle ATMO), le polluant le plus défavorable, la liste des polluants et leurs concentrations lorsqu'elles existent. Les données anciennes et les indices spéciaux (code 7) sont distingués.
 

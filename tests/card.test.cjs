@@ -14,7 +14,7 @@ class HTMLElementMock {
   }
   dispatchEvent(event) { this.events.push(event); return true; }
 }
-const ctx = {HTMLElement:HTMLElementMock, customElements:{get:(n)=>registered.get(n),define:(n,v)=>registered.set(n,v)},window:{customCards:[]},console:{info(){}},document:{createElement(tag){return new (registered.get(tag))();}},CustomEvent:class {constructor(type,init){this.type=type;this.detail=init?.detail;}},Intl,Date,Number,Math,Set,Array};
+const ctx = {HTMLElement:HTMLElementMock, customElements:{get:(n)=>registered.get(n),define:(n,v)=>registered.set(n,v)},window:{customCards:[]},console:{info(){}},document:{createElement(tag){return new (registered.get(tag))();}},CustomEvent:class {constructor(type,init){this.type=type;this.detail=init?.detail;}},Intl,Date,Number,Math,Set,Array,URL};
 vm.runInNewContext(script,ctx,{timeout:2500});
 const Card=registered.get('niak-weather-modular-card');
 
@@ -36,12 +36,12 @@ const view={
 };
 
 test('les 13 formats sont déclarés dans le sélecteur Home Assistant',()=>{
-  assert.equal(ctx.window.customCards.length,15);
+  assert.equal(ctx.window.customCards.length,17);
   for(const {type} of ctx.window.customCards) assert.ok(registered.get(type));
 });
 
 test('chaque format produit un rendu autonome sans erreur',()=>{
-  for(const f of ['summary','current','bulletin','events','comfort','extras','solar','uv','lux','humidity','dew','rain','wind','pressure','pollen','hours','days','pollen-forecast','air','moon']){
+  for(const f of ['summary','current','bulletin','events','comfort','extras','solar','uv','lux','humidity','dew','rain','wind','pressure','pollen','hours','days','pollen-forecast','air','moon','sun-home','radars']){
     const c=new Card(); c.setConfig({type:'custom:niak-weather-modular-card',format:f}); c._view=view;c._render();
     assert.ok(!c.shadowRoot.innerHTML.includes('Erreur d’affichage :'),f);
     assert.ok(c.shadowRoot.innerHTML.includes('<ha-card'),f);
@@ -522,4 +522,76 @@ test('Carte complète : transmet réellement les options à Niak officiel et ajo
     ctx.document.createElement=oldCreate;
     if(existing)registered.set('niak-weather-card',existing);else registered.delete('niak-weather-card');
   }
+});
+
+
+test('Soleil : capteurs réels, durée en minutes, date explicite des prochains événements',()=>{
+  const card=new Card();card.setConfig({format:'sun-home',show_source:true,sun_show_diagram:false});
+  card.hass={states:{
+    'sensor.difference_de_soleil':{state:'-7',attributes:{}},
+    'sensor.sunterrasse_sun_duration':{state:'725',attributes:{}},
+    'sun.sun':{state:'below_horizon',attributes:{
+      next_dawn:'2026-10-26T05:24:00Z',next_rising:'2026-10-26T06:08:00Z',
+      next_setting:'2026-10-26T17:00:00Z',next_dusk:'2026-10-26T17:43:00Z'
+    }}
+  }};
+  const html=card.shadowRoot.innerHTML;
+  assert.match(html,/Soleil & Ensoleillement/);
+  assert.match(html,/−7 min/);
+  assert.match(html,/12h05/);
+  assert.match(html,/Aube/);assert.match(html,/Lever/);assert.match(html,/Coucher/);assert.match(html,/Crépuscule/);
+  assert.doesNotMatch(html,/solar-mask-card/);
+});
+test('Soleil : durée manquante non inventée, masque solaire demandé si capteur absent',()=>{
+  const card=new Card();card.setConfig({format:'sun-home'});
+  card.hass={states:{'sun.sun':{state:'above_horizon',attributes:{}}}};
+  const html=card.shadowRoot.innerHTML;
+  assert.match(html,/Choisis une entité Solar Mask/);
+  assert.match(html,/—/);assert.doesNotMatch(html,/NaN/);
+});
+test('Radars : aucune URL par défaut, donc aucun iframe ni adresse imposée',()=>{
+  const card=new Card();card.setConfig({format:'radars'});
+  card.hass={states:{}};
+  const html=card.shadowRoot.innerHTML;
+  assert.match(html,/Aucune URL n’est définie par défaut/);
+  assert.equal((html.match(/<iframe/g)||[]).length,0);
+  assert.doesNotMatch(html,/meteo-grenoble|rain-map|https:\/\/[^"]+radar/);
+});
+test('Radars : URLs distinctes, intégration sécurisée et affichage en onglets',()=>{
+  const card=new Card();card.setConfig({format:'radars',radar_layout:'tabs',radar_height:380,
+    radar_url_current:'https://www.meteo-grenoble.com/rain-map?type=now',
+    radar_url_forecast:'https://www.meteo-grenoble.com/rain-map?type=forecasts'});
+  card.hass={states:{}};
+  const html=card.shadowRoot.innerHTML;
+  assert.equal((html.match(/<iframe/g)||[]).length,2);
+  assert.match(html,/rain-map\?type=now/);
+  assert.match(html,/rain-map\?type=forecasts/);
+  assert.match(html,/height:380px/);assert.match(html,/sandbox="allow-scripts/);
+  assert.match(html,/radar-grid radar-tabs/);
+});
+test('Radars : schémas dangereux non insérés dans le tableau de bord',()=>{
+  const card=new Card();card.setConfig({format:'radars',
+    radar_url_current:'javascript:alert(1)',radar_url_forecast:'data:text/html,<script>alert(1)</script>'});
+  card.hass={states:{}};
+  assert.doesNotMatch(card.shadowRoot.innerHTML,/<iframe/);
+  assert.doesNotMatch(card.shadowRoot.innerHTML,/javascript:alert/);
+});
+test('Éditeur : Soleil et Radars configurables, sans URL préremplie',()=>{
+  const sun=Card.getConfigElement();sun.setConfig({format:'sun-home'});
+  for(const id of ['sun_difference_entity','sun_duration_entity','sun_diagram_entity',
+      'sun_elevation_entity','sun_show_times','sun_show_diagram'])
+    assert.match(sun.shadowRoot.innerHTML,new RegExp('name="'+id+'"'));
+  const radar=Card.getConfigElement();radar.setConfig({format:'radars'});
+  for(const id of ['radar_url_current','radar_url_forecast','radar_layout','radar_height'])
+    assert.match(radar.shadowRoot.innerHTML,new RegExp('name="'+id+'"'));
+  assert.doesNotMatch(radar.shadowRoot.innerHTML,/value="https:\/\/www\.meteo-grenoble/);
+});
+test('Carte complète : activations du Soleil et des Radars visibles dans l’éditeur',()=>{
+  const editor=Card.getConfigElement();
+  editor.setConfig({format:'full',full_show_sun:true,full_show_radars:true,full_sun_position:'before'});
+  const html=editor.shadowRoot.innerHTML;
+  for(const id of ['full_show_sun','full_show_radars','full_sun_position','full_radars_position',
+    'full_sun_order','full_radars_order','radar_url_current','radar_url_forecast','sun_diagram_entity'])
+    assert.match(html,new RegExp('name="'+id+'"'));
+  assert.match(html,/Avant la météo/);
 });
