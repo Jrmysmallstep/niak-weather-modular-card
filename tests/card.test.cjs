@@ -501,7 +501,9 @@ test('Carte complète : réutilise Niak officiel et affiche Lune, Soleil et Rada
         remove(){grid=null;},_children:children};
       return g;
     }
-    return originalCreate(tag);
+    const element=originalCreate(tag);
+    if(element&&!element.style)element.style={};
+    return element;
   };
   try{
     const card=new Card();
