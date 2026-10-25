@@ -26,6 +26,7 @@ const view={
  season:{info:{season:'autumn',icon:'mdi:leaf'},news:'Automne'},
  alerts:[],points:[{label:'Pluie',text:'Pluie dans 2 h',icon:'mdi:weather-rainy',clock:'17 h'}],
  bulletin:{summary:'Quelques nuages cet après-midi.',periods:[{label:'Ce soir',icon:'mdi:weather-night',text:'Temps sec'}]},
+ extras:[{theme:'level1',icon:'mdi:solar-power-variant-outline',value:'0 W/m²',label:'soleil',entity:'sensor.solar'},{theme:'level1',icon:'mdi:sun-wireless-outline',value:'0',label:'UV faible',entity:'sensor.uv'},{theme:'level1',icon:'mdi:brightness-5',value:'10',label:'lux',entity:'sensor.lux'},{theme:'rain',icon:'mdi:water-percent',value:'94 %',label:'humidité',entity:'sensor.humidity'},{theme:'cold',icon:'mdi:thermometer-water',value:'9,9 °C',label:'rosée',entity:'sensor.dew_point'},{theme:'level1',icon:'mdi:flower-pollen',value:'Pollen',label:'faible',entity:'sensor.pollen'}],
  comfort:{feels:17,temperature:18,word:'Frais',humidity:'62 %',source:'Station locale',gap:-1,factors:[{icon:'mdi:weather-windy',label:'Vent'}],example:'17 °C ressentis'},
  rain:{source:'Station locale',value:0,unit:'mm',label:'Aujourd’hui',days:[{label:'Lun',value:1},{label:'Mar',value:0.3}],stats:[{label:'Hier',value:'2 mm'}]},
  wind:{source:'Station locale',value:3,label:'Vent moyen',description:'Très légère brise',bearing:74,mean:series(2),gust:series(5),top:20,meanLabel:'Vent moyen',stats:[{label:'Rafales',value:'8 km/h'}]},
@@ -35,12 +36,12 @@ const view={
 };
 
 test('les 13 formats sont déclarés dans le sélecteur Home Assistant',()=>{
-  assert.equal(ctx.window.customCards.length,13);
+  assert.equal(ctx.window.customCards.length,19);
   for(const {type} of ctx.window.customCards) assert.ok(registered.get(type));
 });
 
 test('chaque format produit un rendu autonome sans erreur',()=>{
-  for(const f of ['summary','current','bulletin','events','comfort','rain','wind','pressure','pollen','hours','days','pollen-forecast','air']){
+  for(const f of ['summary','current','bulletin','events','comfort','extras','solar','uv','lux','humidity','dew','rain','wind','pressure','pollen','hours','days','pollen-forecast','air']){
     const c=new Card(); c.setConfig({type:'custom:niak-weather-modular-card',format:f}); c._view=view;c._render();
     assert.ok(!c.shadowRoot.innerHTML.includes('Erreur d’affichage :'),f);
     assert.ok(c.shadowRoot.innerHTML.includes('<ha-card'),f);
@@ -162,4 +163,36 @@ test('ressenti individuel : le repère thermomètre est optionnel',()=>{
   const main=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
   assert.match(main,/class="comfort-feel"/);
   assert.doesNotMatch(main,/class="comfort-thermo"/);
+});
+
+
+test('les 5 cartes indicateurs présentent uniquement leur mesure',()=>{
+  for(const [format,needed,excluded] of [['solar','0 W/m²','94 %'],['uv','UV faible','9,9 °C'],['lux','lux','94 %'],['humidity','94 %','0 W/m²'],['dew','9,9 °C','94 %']]) {
+    const c=new Card();c.setConfig({format});c._view=view;c._render();const v=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+    assert.ok(v.includes(needed),format);assert.ok(!v.includes(excluded),format);assert.ok(!v.includes('>Indicateurs<'),format);
+  }
+});
+
+test('indicateurs groupés : 5 pastilles Niak, sans pollen dupliqué',()=>{
+  const c=new Card();c.setConfig({format:'extras',background_mode:'transparent'});c._view=view;c._render();
+  const v=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.equal((v.match(/class="extra-chip"/g)||[]).length,5);
+  assert.ok(v.includes('sensor.solar'));assert.ok(v.includes('sensor.dew_point'));assert.ok(!v.includes('sensor.pollen'));
+  assert.ok(v.includes('bg-transparent'));assert.ok(!v.includes('>Indicateurs<'));
+});
+
+test('indicateurs groupés : filtrer humidité et rosée',()=>{
+  const c=new Card();c.setConfig({format:'extras',extras_blocks:['humidity','dew']});c._view=view;c._render();
+  const v=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.equal((v.match(/class="extra-chip"/g)||[]).length,2);
+  assert.ok(v.includes('94 %'));assert.ok(v.includes('9,9 °C'));assert.ok(!v.includes('solar-power'));
+});
+
+test('éditeur indicateurs et protection HTML',()=>{
+  const ed=Card.getConfigElement();ed.setConfig({format:'extras',extras_blocks:['uv']});
+  assert.match(ed.shadowRoot.innerHTML,/Indicateurs à afficher/);assert.match(ed.shadowRoot.innerHTML,/data-extra="1"/);
+  assert.match(ed.shadowRoot.innerHTML,/value="uv" checked/);
+  const c=new Card();c.setConfig({format:'solar'});c._view={...view,extras:[{theme:'level1',icon:'mdi:solar-power-variant-outline',value:'<script>alert(1)</script>',label:'soleil'}]};c._render();
+  const v=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(v,/&lt;script&gt;/);assert.doesNotMatch(v,/<script>alert/);
 });

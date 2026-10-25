@@ -2,12 +2,12 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.1.3-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.1.4-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Cette carte **ne remplace pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
 
-## 13 formats indépendants
+## 19 formats indépendants
 
 | Format YAML | Carte |
 |---|---|
@@ -16,6 +16,12 @@ Cette carte **ne remplace pas l'intégration [Niak Weather](https://github.com/N
 | `bulletin` | Bulletin du jour |
 | `events` | Événements météo |
 | `comfort` | Ressenti |
+| `extras` | Pastilles regroupées : soleil, UV, lux, humidité, rosée |
+| `solar` | Ensoleillement |
+| `uv` | Indice UV |
+| `lux` | Luminosité |
+| `humidity` | Humidité |
+| `dew` | Point de rosée |
 | `rain` | Pluie |
 | `wind` | Vent |
 | `pressure` | Pression |
@@ -94,9 +100,28 @@ entry_id: "identifiant_de_l_entree_niak"
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
 
+## Cartes de mesures complémentaires
+
+La version **0.1.4-beta.1** ajoute une carte `extras` qui reprend les cinq pastilles de Niak Weather sans conteneur « Aujourd'hui ». Les formats `solar`, `uv`, `lux`, `humidity` et `dew` affichent chaque mesure séparément.
+
+```yaml
+type: custom:niak-weather-modular-card
+format: extras
+background_mode: transparent
+show_title: false
+extras_blocks:
+  - solar
+  - uv
+  - lux
+  - humidity
+  - dew
+```
+
+Pour afficher uniquement humidité et rosée, conserver seulement `humidity` et `dew` dans `extras_blocks`. Un éditeur visuel permet les mêmes choix. Les autres pastilles (dont certaines espèces de pollens) peuvent être incluses avec la catégorie `other`. Les valeurs affichées sont uniquement celles fournies par Niak Weather, avec leurs icônes, couleurs et liens vers les entités.
+
 ## Carte Ressenti indépendante
 
-Depuis **0.1.3-beta.1**, le format `comfort` reprend l'affichage de Niak Weather : valeur de ressenti, libellé, facteurs, bouton d'information et **jauge colorée de −5 °C à 45 °C** avec les deux repères du thermomètre (lorsque disponible) et du ressenti.
+Depuis **0.1.4-beta.1**, le format `comfort` reprend l'affichage de Niak Weather : valeur de ressenti, libellé, facteurs, bouton d'information et **jauge colorée de −5 °C à 45 °C** avec les deux repères du thermomètre (lorsque disponible) et du ressenti.
 
 ```yaml
 type: custom:niak-weather-modular-card
