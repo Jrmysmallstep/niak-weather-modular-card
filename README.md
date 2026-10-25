@@ -2,7 +2,7 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.1.1-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.1.2-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Cette carte **ne remplace pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
@@ -93,6 +93,14 @@ entry_id: "identifiant_de_l_entree_niak"
 ```
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
+
+## Affichage et défilement de la carte Événements
+
+Depuis **0.1.2-beta.1**, la carte **Événements** reprend les variables graphiques attendues par la frise Niak officielle (couleurs, pastilles, typographie, transparence). Son titre utilise le libellé discret « ÉVÉNEMENTS ».
+
+La frise native n'est plus détruite puis recréée à chaque réception météo : elle conserve ainsi son **défilement automatique (un événement toutes les 4,5 secondes)**. Le même principe s'applique au bloc Événements de la carte Synthèse, avec mise à jour des autres blocs sans supprimer la frise.
+
+**Comportement volontaire de Niak Weather :** sur ordinateur, le défilement se met en pause au survol ou au focus de la frise, et repart lorsque le pointeur sort. Pour vérifier l'animation, déplacer le curseur en dehors de la carte. En l'absence du composant `niak-frise` officiel, le rendu de secours reste une liste statique.
 
 ## Fond de carte et thèmes Home Assistant
 

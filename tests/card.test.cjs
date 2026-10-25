@@ -106,3 +106,28 @@ test('l’éditeur propose les trois modes de fond',()=>{
   assert.match(el.shadowRoot.innerHTML,/Transparent \(sans fond\)/);
   assert.match(el.shadowRoot.innerHTML,/value="theme" selected/);
 });
+
+
+test('la frise garde son instance et son défilement entre deux mises à jour météo',()=>{
+  // Simule l’élément Lit Niak déjà chargé par l’intégration officielle.
+  if(!registered.get('niak-frise'))registered.set('niak-frise',class {});
+  const card=new Card();card.setConfig({format:'events'});card._view=view;card._render();
+  const markup=card.shadowRoot.innerHTML;
+  const frise={points:[],alerts:[],hours:[],timeline:undefined};
+  card.shadowRoot.querySelectorAll=selector=>selector==='niak-frise'?[frise]:[];
+  const nextPoints=[...view.points,{label:'Vent',text:'Rafales ce soir',icon:'mdi:weather-windy',clock:'20 h'}];
+  card._view={...view,points:nextPoints};
+  card._render();
+  assert.equal(card.shadowRoot.innerHTML,markup,'La DOM de la frise ne doit pas être recréée');
+  assert.equal(frise.points,nextPoints,'Les données doivent être actualisées sur la même instance');
+});
+
+test('la frise reprend la charte CSS de Niak Weather',()=>{
+  assert.match(script,/--nw-glass-clear:/);
+  assert.match(script,/--nw-glass-strong:/);
+  assert.match(script,/--nw-frost:/);
+  assert.match(script,/--nw-fs-label:/);
+  assert.match(script,/--nw-level3:/);
+  assert.match(script,/--nw-radius-pill:/);
+  assert.match(script,/label\('Événements'\)/);
+});

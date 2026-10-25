@@ -1,12 +1,12 @@
 /**
- * Niak Weather Modular Card — 0.1.1-beta.1
+ * Niak Weather Modular Card — 0.1.2-beta.1
  * Standalone dashboard card consuming the original Niak Weather websocket view.
  * Inspired by Niak Weather by Niakman13 (MIT); see LICENSE and README.md.
  * No Python integration replacement, cloud calls or external JavaScript dependencies.
  */
 (() => {
   'use strict';
-  const VERSION = '0.1.1-beta.1';
+  const VERSION = '0.1.2-beta.1';
   const ELEMENT = 'niak-weather-modular-card';
   const FORMATS = [
     ['summary', 'Synthèse', 'En ce moment, bulletin et événements'],
@@ -75,7 +75,7 @@
     const when=x=>x.clock||(x.at?new Date(x.at*1000).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'Maintenant');
     const fallback=`<div class="events">${alerts.map(x=>`<div class="event alert${x.level||1}">${icon(x.icon)}<div><span class="label">${esc(x.label||'Vigilance')}</span><b>${esc(x.text)}</b></div></div>`).join('')}${list.map(x=>`<div class="event">${icon(x.icon)}<div><span class="label">${esc(when(x))}${x.label?` · ${esc(x.label)}`:''}</span><b>${esc(x.text)}</b></div></div>`).join('')}</div>`;
     const native=customElements.get('niak-frise')?'<niak-frise></niak-frise>':fallback;
-    return wrap(`${heading('Événements','mdi:timeline-clock-outline','',c)}${native}`,c,'events');
+    return wrap(`${opt(c,'show_title')?label('Événements'):''}${native}`,c,'events');
   }
   function summary(v,c){const blocks=Array.isArray(c.blocks)?c.blocks:SUMMARY;const chosen=blocks.filter(b=>SUMMARY.includes(b));if(!chosen.length)return empty('Choisissez au moins un bloc pour la synthèse.');return `<section class="summary">${opt(c,'show_title')?`<header class="summary-head"><strong>Synthèse</strong>${opt(c,'show_date')?`<span>${esc([v.location,v.dateLabel].filter(Boolean).join(' · '))}</span>`:''}</header>`:''}<div class="summary-parts">${chosen.map(b=>b==='current'?current(v,{...c,show_title:false}):b==='bulletin'?bulletin(v,c):eventList(v,c)).join('')}</div></section>`;}
   function pollenCards(v,c,tomorrow=false,kind='pollen'){
@@ -92,7 +92,16 @@
   function days(v,c){const days=(v.days||[]).slice(0,7);if(!days.length)return empty('Prévisions journalières indisponibles.');const temps=days.flatMap(x=>[x.low,x.high]).filter(present);const lo=temps.length?Math.min(...temps):0,hi=temps.length?Math.max(...temps):1,span=Math.max(1,hi-lo);return wrap(`${heading('7 prochains jours','mdi:calendar-week',v.provider,c)}<div class="days-table"><div class="day-head"><span>Jour</span><span>Temps</span><span>Min / max</span><span>Pluie</span><span>Vent</span></div>${days.map(x=>`<div class="day-row"><b>${esc(x.label)}</b>${icon(x.icon)}<div class="day-temp"><div><span>${present(x.low)?num(x.low,0)+'°':'—'}</span><span>${present(x.high)?num(x.high,0)+'°':'—'}</span></div>${present(x.low)&&present(x.high)?`<i style="--left:${(x.low-lo)/span*100}%;--width:${Math.max(3,(x.high-x.low)/span*100)}%"></i>`:''}</div><span>${num(x.rain)} mm</span><span>${present(x.wind)?num(x.wind,0)+' km/h':'—'}</span></div>`).join('')}</div>`,c,'days');}
   function display(v,c){switch(c.format){case 'summary':return summary(v,c);case 'current':return current(v,c);case 'bulletin':return bulletin(v,c);case 'events':return eventList(v,c);case 'comfort':return comfort(v,c);case 'rain':return rain(v,c);case 'wind':return wind(v,c);case 'pressure':return pressure(v,c);case 'pollen':return pollenCards(v,c,false);case 'hours':return hours(v,c);case 'days':return days(v,c);case 'pollen-forecast':return pollenCards(v,c,true);case 'air':return pollenCards(v,c,false,'air');default:return empty('Format inconnu.');}}
   const CSS = `
-    :host{display:block;--nw-bg:var(--ha-card-background,var(--card-background-color,var(--primary-background-color,#fff)));--nw-glass-base:var(--primary-background-color,var(--nw-bg));--nw-fg:var(--primary-text-color,#26334b);--nw-fg2:var(--secondary-text-color,#5f6880);--nw-line:var(--divider-color,#dde1e9);--nw-soft:color-mix(in srgb,var(--nw-wind) 12%,transparent);--nw-wind:var(--niak-wind-color,#8798d2);--nw-wind-light:color-mix(in srgb,var(--nw-wind) 44%,transparent);--nw-pressure:var(--niak-pressure-color,#aaa0da);--nw-pollen:var(--niak-calm-color,#69b8a2);--nw-rain:var(--niak-rain-color,#4fb3bf);color:var(--nw-fg);font-family:var(--paper-font-body1_-_font-family,inherit)}
+    :host{display:block;--nw-bg:var(--ha-card-background,var(--card-background-color,var(--primary-background-color,#fff)));--nw-glass-base:var(--primary-background-color,var(--nw-bg));--nw-fg:var(--primary-text-color,#26334b);--nw-fg2:var(--secondary-text-color,#5f6880);--nw-line:var(--divider-color,#dde1e9);--nw-soft:color-mix(in srgb,var(--nw-wind) 12%,transparent);--nw-wind:var(--niak-wind-color,#8798d2);--nw-wind-light:color-mix(in srgb,var(--nw-wind) 44%,transparent);--nw-pressure:var(--niak-pressure-color,#aaa0da);--nw-pollen:var(--niak-calm-color,#69b8a2);--nw-rain:var(--niak-rain-color,#4fb3bf);
+      --nw-accent:var(--primary-color,#03a9f4);--nw-radius:14px;--nw-radius-pill:999px;
+      --nw-fs-label:10px;--nw-fs-small:12px;--nw-fs-text:13px;--nw-label-spacing:.6px;--nw-ink:34%;
+      --nw-glass-clear:color-mix(in srgb,var(--nw-bg) 45%,transparent);
+      --nw-glass-strong:color-mix(in srgb,var(--nw-bg) 84%,transparent);
+      --nw-frost:blur(14px) saturate(1.6);--nw-ease:cubic-bezier(.2,.8,.2,1);
+      --nw-calm:var(--niak-calm-color,oklch(.83 .075 150));--nw-heat:var(--niak-heat-color,oklch(.83 .085 42));
+      --nw-cold:var(--niak-cold-color,oklch(.85 .05 220));--nw-level1:var(--niak-level1-color,oklch(.88 .1 96));
+      --nw-level2:var(--niak-level2-color,oklch(.81 .105 64));--nw-level3:var(--niak-level3-color,oklch(.74 .115 18));
+      --nw-motion:running;color:var(--nw-fg);font-family:var(--paper-font-body1_-_font-family,inherit)}
     ha-card{display:block;padding:0;--nw-card-surface:color-mix(in srgb,var(--nw-glass-base) 72%,transparent);background:var(--nw-card-surface);backdrop-filter:blur(12px) saturate(1.15);-webkit-backdrop-filter:blur(12px) saturate(1.15);color:var(--nw-fg);overflow:hidden;container-type:inline-size;border-radius:var(--ha-card-border-radius,14px);box-sizing:border-box}
     ha-card.bg-theme{--nw-card-surface:var(--nw-bg);backdrop-filter:none;-webkit-backdrop-filter:none}
     ha-card.bg-transparent{--nw-card-surface:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
@@ -104,7 +113,7 @@
     .metric-row{display:flex;align-items:center;justify-content:space-between;gap:20px;min-width:0}.metric{flex:1;min-width:0}.big{font-size:42px;font-weight:760;line-height:1.2;white-space:normal;font-variant-numeric:tabular-nums}.big span{font-size:19px;font-weight:400;margin-left:7px;color:var(--nw-fg2)}.subtitle{font-size:14px;line-height:1.45;color:var(--nw-fg2)}.compass{width:88px;height:88px;flex:none;color:var(--nw-fg2)}
     .label{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:750;color:var(--nw-fg2);line-height:1.35}.graph{display:flex;flex-direction:column;gap:12px;margin-top:10px;min-width:0}.graph-title{color:var(--nw-fg2);font-size:13px}.plot{position:relative;height:130px}.plot svg{width:100%;height:100%;overflow:visible}.plot-pill{position:absolute;transform:translate(-50%,-50%);background:var(--nw-bg);border:1px solid var(--nw-line);box-shadow:0 2px 7px #0001;border-radius:22px;padding:3px 7px;font-size:13px;font-weight:700;pointer-events:none}.axis{display:flex;justify-content:space-between;gap:10px;color:var(--nw-fg2);font-size:11px;font-weight:750;letter-spacing:1px}.legend{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;color:var(--nw-fg2);font-size:12px}.legend span{display:inline-flex;align-items:center;gap:7px}.legend i{display:inline-block;width:21px;height:4px;border-radius:4px;background:var(--line)}.legend i.dash{background:repeating-linear-gradient(90deg,var(--line) 0 4px,transparent 4px 8px)}
     .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--nw-line);padding-top:15px;gap:10px}.stats>div{display:flex;flex-direction:column;gap:6px;min-width:0}.stats b{font-size:16px;line-height:1.25;overflow-wrap:anywhere}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,var(--nw-wind) 9%,transparent);border-radius:10px;padding:7px 10px;color:var(--nw-fg);font-size:12px;line-height:1.4}.chip ha-icon{--mdc-icon-size:16px;color:var(--nw-wind)}.chip b{font-weight:750}
-    .note{color:var(--nw-fg2);font-size:12px;line-height:1.5;margin:0}.bulletin{font-size:15px;line-height:1.65;margin:0}.periods{display:grid;gap:9px;padding-top:10px;border-top:1px solid var(--nw-line)}.periods>div{display:flex;gap:9px;align-items:flex-start}.periods ha-icon{color:var(--nw-wind)}.periods span{display:grid;gap:2px}.periods small{color:var(--nw-fg2);font-size:12px}.events{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;padding:4px 2px 8px;scroll-snap-type:x proximity}.event{display:flex;gap:8px;align-items:flex-start;min-width:165px;max-width:260px;flex:1 0 170px;border:1px solid var(--nw-line);border-radius:12px;background:color-mix(in srgb,var(--nw-wind) 5%,var(--nw-card-surface));padding:12px;scroll-snap-align:start}.event ha-icon{color:var(--nw-wind);--mdc-icon-size:20px}.event>div{display:flex;flex-direction:column;gap:5px}.event b{font-size:12px;line-height:1.5;font-weight:650}.event.alert2,.event.alert3{border-color:var(--warning-color,#edb65e)}
+    .note{color:var(--nw-fg2);font-size:12px;line-height:1.5;margin:0}.bulletin{font-size:15px;line-height:1.65;margin:0}.periods{display:grid;gap:9px;padding-top:10px;border-top:1px solid var(--nw-line)}.periods>div{display:flex;gap:9px;align-items:flex-start}.periods ha-icon{color:var(--nw-wind)}.periods span{display:grid;gap:2px}.periods small{color:var(--nw-fg2);font-size:12px}.inner.events{padding:12px 16px 16px;gap:10px}.inner.events>.label{margin:0 4px}.inner.events>niak-frise{display:block;min-width:0}.events{display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;padding:4px 2px 8px;scroll-snap-type:x proximity}.event{display:flex;gap:8px;align-items:flex-start;min-width:165px;max-width:260px;flex:1 0 170px;border:1px solid var(--nw-line);border-radius:12px;background:color-mix(in srgb,var(--nw-wind) 5%,var(--nw-card-surface));padding:12px;scroll-snap-align:start}.event ha-icon{color:var(--nw-wind);--mdc-icon-size:20px}.event>div{display:flex;flex-direction:column;gap:5px}.event b{font-size:12px;line-height:1.5;font-weight:650}.event.alert2,.event.alert3{border-color:var(--warning-color,#edb65e)}
     .current{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(circle at 95% 0%,color-mix(in srgb,var(--nw-wind) 15%,transparent),transparent 60%),var(--nw-card-surface)}.sky-layer{position:absolute;inset:0;pointer-events:none;opacity:.32;z-index:0}.current>:not(.sky-layer){position:relative;z-index:1}.current-top,.summary-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.current-top strong,.summary-head strong{font-size:19px}.date{font-size:12px;color:var(--nw-fg2)}.current-grid{display:flex;align-items:center;justify-content:space-between;gap:14px}.condition{display:flex;gap:11px;align-items:center;min-width:0}.condition>div{display:flex;flex-direction:column;gap:4px}.condition b{font-size:15px}.condition .weather-icon{--mdc-icon-size:40px;color:var(--nw-wind)}.temp{font-size:47px;line-height:1.15;font-weight:770;white-space:nowrap}.temp span{font-size:18px;font-weight:450}.current .source{max-width:100%;align-self:flex-start}.summary{padding:15px;display:grid;gap:8px}.summary-parts{display:grid;gap:8px}.summary .inner{padding:15px 16px;border:1px solid var(--nw-line);border-radius:14px}.summary .summary-head{padding:6px 9px 12px}.summary-head span{font-size:12px;color:var(--nw-fg2)}
     .rain-next{display:grid;gap:9px}.rain-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:end;min-height:120px}.rain-days>.label{grid-column:1/-1}.rain-days>div{display:flex;flex-direction:column;gap:5px;justify-content:flex-end;align-items:center;height:85px;font-size:10px;min-width:0}.rain-days i{display:block;background:var(--nw-rain);border-radius:4px 4px 0 0;width:35%;min-height:2px}.rain-days b{white-space:nowrap;font-size:9px}.pollen-stack{display:grid;gap:12px}.pollen-main{display:flex;gap:15px;align-items:center}.pollen-main .disc{height:80px;width:80px;flex:none}.pollen-main>div{display:grid;gap:4px}.pollen-main b{font-size:20px}.details{border-top:1px solid var(--nw-line);padding-top:10px}.details summary{cursor:pointer;font-size:13px;font-weight:650;color:var(--nw-fg2)}.detail-line{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--nw-line);padding:9px 0;font-size:13px}.detail-line b{font-weight:600;text-align:right}.details .note{margin-top:10px}
     .hours-plot{height:160px;position:relative;border-radius:12px;overflow:hidden;background:repeating-linear-gradient(0deg,transparent 0 32px,color-mix(in srgb,var(--nw-line) 55%,transparent) 32px 33px)}.hours-plot svg{width:100%;height:100%}.hour-marks{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-top:2px}.hour-marks>span{display:flex;align-items:center;flex-direction:column;gap:4px;color:var(--nw-fg2);font-size:11px;min-width:0}.hour-marks ha-icon{--mdc-icon-size:22px;color:var(--nw-wind)}.hour-marks small{font-size:10px;text-align:center}
@@ -114,7 +123,7 @@
   `;
 
   class NiakModularCard extends HTMLElement {
-    constructor(){super();this.attachShadow({mode:'open'});this._config={type:`custom:${ELEMENT}`,format:'wind'};this._view=null;this._error='';this._hass=null;this._connection=null;this._subscription=null;this._requestedEntry=null;this._generation=0;this._lastKey='';this._onEvent=e=>{const target=e.composedPath().find(x=>x?.getAttribute?.('data-entity'));const entity=target?.getAttribute('data-entity');if(entity){this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:entity},bubbles:true,composed:true}));}};this.shadowRoot.addEventListener('click',this._onEvent);}
+    constructor(){super();this.attachShadow({mode:'open'});this._config={type:`custom:${ELEMENT}`,format:'wind'};this._view=null;this._error='';this._hass=null;this._connection=null;this._subscription=null;this._requestedEntry=null;this._generation=0;this._lastKey='';this._renderKey='';this._onEvent=e=>{const target=e.composedPath().find(x=>x?.getAttribute?.('data-entity'));const entity=target?.getAttribute('data-entity');if(entity){this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:entity},bubbles:true,composed:true}));}};this.shadowRoot.addEventListener('click',this._onEvent);}
     static getStubConfig(){return {type:`custom:${ELEMENT}`,format:'wind'};}
     static getConfigElement(){return document.createElement('niak-weather-modular-editor');}
     setConfig(config){if(!config||!FORMAT_SET.has(config.format||'wind'))throw new Error('Niak Weather Modular : format inconnu.');const old=this._config;this._config={...DEFAULTS,...config,format:config.format||'wind'};if(old?.entry_id!==this._config.entry_id){this._view=null;this._stopSubscription();}this._render();this._subscribe();}
@@ -126,7 +135,58 @@
     getGridOptions(){return {columns:12,rows:'auto',min_columns:3};}
     _stopSubscription(){this._generation++;const sub=this._subscription;this._subscription=null;this._requestedEntry=null;if(sub){sub.then(stop=>typeof stop==='function'?stop():null).catch(()=>{});}}
     _subscribe(){if(!this.isConnected||!this._hass?.connection||!this._config)return;const entry=this._config.entry_id||'';if(this._subscription&&this._requestedEntry===entry&&this._connection===this._hass.connection)return;this._stopSubscription();this._connection=this._hass.connection;this._requestedEntry=entry;this._error='';const gen=this._generation;const payload={type:'niak_weather/subscribe',...(entry?{entry_id:entry}:{})};const pending=this._connection.subscribeMessage(data=>{if(gen!==this._generation)return;if(data.reload){this._view=null;this._error='La configuration Niak Weather a changé. Rechargez la page.';}else if(data.version!==1){this._error='Version de données Niak Weather non compatible (attendue : 1).';this._view=null;}else{this._view=data.view;this._error='';}this._render();},payload);this._subscription=pending;Promise.resolve(pending).catch(e=>{if(gen!==this._generation)return;this._subscription=null;const msg=e?.code==='choose_entry'?'Plusieurs lieux Niak Weather : indiquez entry_id dans la carte.':e?.code==='not_configured'?'Configurez d’abord l’intégration Niak Weather.':e?.code==='unknown_command'?'Intégration Niak Weather introuvable.':e?.message||'Impossible de recevoir les données Niak Weather.';this._error=msg;this._render();});}
-    _render(){if(!this.shadowRoot)return;const c=this._config;let body='';try{body=this._error?`<div class="empty" role="alert">${icon('mdi:alert-circle-outline')} ${esc(this._error)}</div>`:!this._view?`<div class="wait">${icon('mdi:cloud-sync-outline')} Chargement des données Niak Weather…</div>`:display(this._view,c);}catch(e){body=`<div class="empty" role="alert">Erreur d’affichage : ${esc(e?.message||e)}</div>`;}this.shadowRoot.innerHTML=`<style>${CSS}</style><ha-card class="bg-${BACKGROUND_MODES.some(x=>x[0]===c.background_mode)?c.background_mode:'glass'} ${opt(c,'show_border')?'':'no-border'}">${body}</ha-card>`;this.shadowRoot.querySelectorAll('niak-frise').forEach(f=>{f.points=this._view?.points||[];f.alerts=this._view?.alerts||[];f.hours=this._view?.hours||[];f.timeline=this._view?.timeline;});this.shadowRoot.querySelectorAll('niak-weather-sky').forEach(s=>{const v=this._view||{},n=v.now||{};s.condition=n.condition||'unknown';s.phase=n.phase||'unknown';s.animated=opt(c,'show_animations');s.quality='low';s.wind=n.wind||0;s.gust=v.wind?.gust?.at(-1)?.[1]||0;s.detail=n.detail||'';s.season=v.season?.info?.season||'';});}
+    _syncEmbeddedWidgets(c){
+      // Keep the Lit timeline instance alive. Its internal 4.5s timer must survive every incoming weather update.
+      this.shadowRoot.querySelectorAll('niak-frise').forEach(f=>{
+        const v=this._view||{};
+        f.points=v.points||[];f.alerts=v.alerts||[];f.hours=v.hours||[];f.timeline=v.timeline;
+      });
+      this.shadowRoot.querySelectorAll('niak-weather-sky').forEach(s=>{
+        const v=this._view||{},n=v.now||{};
+        s.condition=n.condition||'unknown';s.phase=n.phase||'unknown';s.animated=opt(c,'show_animations');
+        s.quality='low';s.wind=n.wind||0;s.gust=v.wind?.gust?.at(-1)?.[1]||0;
+        s.detail=n.detail||'';s.season=v.season?.info?.season||'';
+      });
+    }
+    _updateSummaryWithoutResettingFrise(body){
+      // Update current weather and the bulletin without detaching the timeline from the document.
+      const root=this.shadowRoot.querySelector?.('section.summary');
+      const oldParts=root?.querySelector('.summary-parts');
+      if(!oldParts)return false;
+      const template=document.createElement('template');template.innerHTML=body;
+      const fresh=template.content.querySelector('section.summary');
+      const newParts=fresh?.querySelector('.summary-parts');
+      if(!newParts||oldParts.children.length!==newParts.children.length)return false;
+      const oldChildren=[...oldParts.children],newChildren=[...newParts.children];
+      if(!oldChildren.every((el,i)=>el.classList.contains('events')===newChildren[i].classList.contains('events')))return false;
+      const oldHead=root.querySelector('.summary-head'),newHead=fresh.querySelector('.summary-head');
+      if(Boolean(oldHead)!==Boolean(newHead))return false;
+      if(oldHead&&newHead)oldHead.replaceWith(newHead);
+      oldChildren.forEach((el,i)=>{if(!el.classList.contains('events'))el.replaceWith(newChildren[i]);});
+      return true;
+    }
+    _render(){
+      if(!this.shadowRoot)return;
+      const c=this._config;
+      let body='';
+      try{
+        body=this._error?`<div class="empty" role="alert">${icon('mdi:alert-circle-outline')} ${esc(this._error)}</div>`
+          :!this._view?`<div class="wait">${icon('mdi:cloud-sync-outline')} Chargement des données Niak Weather…</div>`
+          :display(this._view,c);
+      }catch(e){body=`<div class="empty" role="alert">Erreur d’affichage : ${esc(e?.message||e)}</div>`;}
+      const key=JSON.stringify(c), native=this.shadowRoot.querySelectorAll('niak-frise');
+      if(this._view&&!this._error&&native.length&&this._renderKey===key){
+        if(c.format==='events'){
+          this._syncEmbeddedWidgets(c);return;
+        }
+        if(c.format==='summary'&&this._updateSummaryWithoutResettingFrise(body)){
+          this._syncEmbeddedWidgets(c);return;
+        }
+      }
+      this.shadowRoot.innerHTML=`<style>${CSS}</style><ha-card class="bg-${BACKGROUND_MODES.some(x=>x[0]===c.background_mode)?c.background_mode:'glass'} ${opt(c,'show_border')?'':'no-border'}">${body}</ha-card>`;
+      this._renderKey=key;
+      this._syncEmbeddedWidgets(c);
+    }
   }
 
   class NiakModularEditor extends HTMLElement {
