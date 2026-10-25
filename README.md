@@ -2,26 +2,20 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.1.5-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.2.0-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Les formats météo **ne remplacent pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
 
-## 20 formats indépendants
+## 14 formats dans le sélecteur
 
 | Format YAML | Carte |
 |---|---|
-| `summary` | Synthèse configurable (En ce moment, Bulletin, Événements) |
-| `current` | En ce moment |
+| `overview` | Synthèse / En ce moment : météo, températures, bulletin et événements |
 | `bulletin` | Bulletin du jour |
 | `events` | Événements météo |
 | `comfort` | Ressenti |
-| `extras` | Pastilles regroupées : soleil, UV, lux, humidité, rosée |
-| `solar` | Ensoleillement |
-| `uv` | Indice UV |
-| `lux` | Luminosité |
-| `humidity` | Humidité |
-| `dew` | Point de rosée |
+| `extras` | Indicateurs configurables (soleil, UV, lux, humidité, rosée) |
 | `rain` | Pluie |
 | `wind` | Vent |
 | `pressure` | Pression |
@@ -101,9 +95,40 @@ entry_id: "identifiant_de_l_entree_niak"
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
 
+## Refonte des cartes météo et visuel Lune — version 0.2.0-beta.1
+
+Une carte principale **Synthèse / En ce moment** (`format: overview`) fusionne le rendu des deux anciennes cartes. La température actuelle est affichée au dixième, accompagnée des minimales/maximales prévues et de la tendance mesurée en °C/h (uniquement si Niak Weather fournit ces données). Le bulletin du jour est intégré et peut être masqué. La frise Événements est facultative.
+
+```yaml
+type: custom:niak-weather-modular-card
+format: overview
+background_mode: glass
+show_title: true
+show_date: true
+show_source: true
+show_bulletin: true
+show_temp_range: true
+show_temp_trend: true
+show_events: false
+```
+
+**Indicateurs :** une seule carte `format: extras` avec sélection des indicateurs par cases à cocher. Les cinq formats unitaires ont disparu du sélecteur. Les anciens YAML `summary`, `current`, `solar`, `uv`, `lux`, `humidity`, `dew` sont automatiquement interprétés comme `overview` ou `extras`, et leurs anciens tags personnalisés restent enregistrés, pour éviter de casser les dashboards existants.
+
+**Lune :** `moon_visual_mode` accepte `original` (photographies du projet ngocjohn, chargées depuis jsDelivr : connexion Internet requise), `generated` (SVG local), `image` (PNG/JPEG/WebP personnalisé), ou `svg` (fichier SVG personnalisé rendu comme une image). `moon_image_url` accepte une URL HTTPS ou locale comme `/local/moon/{index}_moon.svg`. `{index}` (0–30) et `{phase}` permettent un jeu d'images évoluant avec la phase. Si une image ne charge pas, un SVG généré est affiché. Les noms et images du projet original appartiennent à ngocjohn (MIT).
+
+```yaml
+type: custom:niak-weather-modular-card
+format: moon
+background_mode: glass
+moon_visual_mode: original
+# Option personnalisée :
+# moon_visual_mode: svg
+# moon_image_url: /local/moon/{index}_moon.svg
+```
+
 ## Carte Lune indépendante — Lunar Phase
 
-Depuis **0.1.5-beta.1**, le format `moon` ajoute une carte inspirée de la disposition de [Lunar Phase Card](https://github.com/ngocjohn/lunar-phase-card), dans le style de Niak Weather Modular Cards (fonds `glass`, `theme`, `transparent`, grille responsive, thème HA). L'illustration de lune est générée localement en SVG ; aucun téléchargement d'image et aucun calcul astronomique supplémentaire.
+Depuis **0.2.0-beta.1**, le format `moon` ajoute une carte inspirée de la disposition de [Lunar Phase Card](https://github.com/ngocjohn/lunar-phase-card), dans le style de Niak Weather Modular Cards (fonds `glass`, `theme`, `transparent`, grille responsive, thème HA). L'illustration de lune est générée localement en SVG ; aucun téléchargement d'image et aucun calcul astronomique supplémentaire.
 
 **Pré-requis pour ce format uniquement :** installer l'intégration [Lunar Phase de ngocjohn](https://github.com/ngocjohn/lunar-phase) dans Home Assistant. Le module sélectionne automatiquement son capteur « Phase de la lune » à partir de ses attributs, ou accepte `moon_entity` explicite. La carte Lune ne nécessite **pas** l'intégration Niak Weather et n'utilise **pas** son WebSocket.
 
@@ -126,7 +151,7 @@ La version initiale reprend la disposition générale (disque lunaire + informat
 
 ## Cartes de mesures complémentaires
 
-La version **0.1.5-beta.1** ajoute une carte `extras` qui reprend les cinq pastilles de Niak Weather sans conteneur « Aujourd'hui ». Les formats `solar`, `uv`, `lux`, `humidity` et `dew` affichent chaque mesure séparément.
+La version **0.2.0-beta.1** ajoute une carte `extras` qui reprend les cinq pastilles de Niak Weather sans conteneur « Aujourd'hui ». Les formats `solar`, `uv`, `lux`, `humidity` et `dew` affichent chaque mesure séparément.
 
 ```yaml
 type: custom:niak-weather-modular-card
@@ -145,7 +170,7 @@ Pour afficher uniquement humidité et rosée, conserver seulement `humidity` et 
 
 ## Carte Ressenti indépendante
 
-Depuis **0.1.5-beta.1**, le format `comfort` reprend l'affichage de Niak Weather : valeur de ressenti, libellé, facteurs, bouton d'information et **jauge colorée de −5 °C à 45 °C** avec les deux repères du thermomètre (lorsque disponible) et du ressenti.
+Depuis **0.2.0-beta.1**, le format `comfort` reprend l'affichage de Niak Weather : valeur de ressenti, libellé, facteurs, bouton d'information et **jauge colorée de −5 °C à 45 °C** avec les deux repères du thermomètre (lorsque disponible) et du ressenti.
 
 ```yaml
 type: custom:niak-weather-modular-card

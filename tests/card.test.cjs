@@ -36,7 +36,7 @@ const view={
 };
 
 test('les 13 formats sont déclarés dans le sélecteur Home Assistant',()=>{
-  assert.equal(ctx.window.customCards.length,20);
+  assert.equal(ctx.window.customCards.length,14);
   for(const {type} of ctx.window.customCards) assert.ok(registered.get(type));
 });
 
@@ -83,9 +83,9 @@ test('la carte consomme la commande websocket officielle version 1',async()=>{
 });
 
 test('éditeur visuel déclaré',()=>{
-  const el=Card.getConfigElement();el.setConfig({format:'summary'});
+  const el=Card.getConfigElement();el.setConfig({format:'overview'});
   assert.ok(el.shadowRoot.innerHTML.includes('Type de carte'));
-  assert.ok(el.shadowRoot.innerHTML.includes('Contenu de la synthèse'));
+  assert.ok(el.shadowRoot.innerHTML.includes('Afficher le bulletin du jour'));
   assert.ok(el.shadowRoot.innerHTML.includes('Afficher la source'));
 });
 
@@ -249,4 +249,35 @@ test('Lune : l’éditeur expose le capteur et sa disposition',()=>{
   assert.match(html,/sensor.phase_moon/);
   assert.match(html,/Position de la lune/);
   assert.match(html,/Hémisphère sud/);
+});
+
+
+test('refonte : synthèse unique, température décimale, min/max, tendance et bulletin',()=>{
+ const card=new Card();card.setConfig({format:'overview',show_events:false});
+ card._view={...view,now:{...view.now,temperature:13.3,trend:2.4},days:[{today:true,low:8,high:13}],bulletin:{summary:'Pluie ce soir jusqu’à 21 h.'}};
+ card._render();const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+ assert.match(html,/13,3/);assert.match(html,/↓ 8°/);assert.match(html,/↑ 13°/);assert.match(html,/\+2,4 °C\/h/);
+ assert.match(html,/Bulletin du jour/);assert.match(html,/Pluie ce soir/);
+});
+test('refonte : options de la synthèse et anciens formats rétrocompatibles',()=>{
+ const card=new Card();card.setConfig({format:'summary',show_bulletin:false,show_temp_range:false,show_temp_trend:false,show_date:false});
+ card._view=view;card._render();const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+ assert.match(html,/ov-now/);assert.doesNotMatch(html,/ov-bulletin|ov-range|ov-trend/);
+ const old=new Card();old.setConfig({format:'uv'});old._view=view;old._render();
+ assert.match(old.shadowRoot.innerHTML,/UV faible/);
+ assert.ok(!ctx.window.customCards.some(x=>/-uv-card$|-solar-card$|-current-card$|-summary-card$/.test(x.type)));
+});
+test('Lune : images originales, personnalisées et SVG avec repli',()=>{
+ const moon={state:'waxing_crescent',attributes:{moon_age:7.9,illumination_fraction:34}};
+ const card=new Card();card.setConfig({format:'moon',moon_visual_mode:'original'});
+ card.hass={states:{'sensor.lunar_phase':moon}};
+ let html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+ assert.match(html,/cdn.jsdelivr.net\/gh\/ngocjohn\/lunar-phase-card@1.14.0\/moon_pic\/8_moon.png/);
+ assert.match(html,/moon-fallback/);
+ card.setConfig({format:'moon',moon_visual_mode:'svg',moon_image_url:'/local/moon/{index}_moon.svg'});
+ html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+ assert.match(html,/\/local\/moon\/8_moon.svg/);
+ card.setConfig({format:'moon',moon_visual_mode:'generated'});
+ html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+ assert.doesNotMatch(html,/class="moon-photo"/);assert.match(html,/moon-disk/);
 });
