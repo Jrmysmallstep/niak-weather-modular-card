@@ -36,12 +36,12 @@ const view={
 };
 
 test('les 13 formats sont déclarés dans le sélecteur Home Assistant',()=>{
-  assert.equal(ctx.window.customCards.length,19);
+  assert.equal(ctx.window.customCards.length,20);
   for(const {type} of ctx.window.customCards) assert.ok(registered.get(type));
 });
 
 test('chaque format produit un rendu autonome sans erreur',()=>{
-  for(const f of ['summary','current','bulletin','events','comfort','extras','solar','uv','lux','humidity','dew','rain','wind','pressure','pollen','hours','days','pollen-forecast','air']){
+  for(const f of ['summary','current','bulletin','events','comfort','extras','solar','uv','lux','humidity','dew','rain','wind','pressure','pollen','hours','days','pollen-forecast','air','moon']){
     const c=new Card(); c.setConfig({type:'custom:niak-weather-modular-card',format:f}); c._view=view;c._render();
     assert.ok(!c.shadowRoot.innerHTML.includes('Erreur d’affichage :'),f);
     assert.ok(c.shadowRoot.innerHTML.includes('<ha-card'),f);
@@ -195,4 +195,58 @@ test('éditeur indicateurs et protection HTML',()=>{
   const c=new Card();c.setConfig({format:'solar'});c._view={...view,extras:[{theme:'level1',icon:'mdi:solar-power-variant-outline',value:'<script>alert(1)</script>',label:'soleil'}]};c._render();
   const v=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
   assert.match(v,/&lt;script&gt;/);assert.doesNotMatch(v,/<script>alert/);
+});
+
+test('Lune : fonctionne sans WebSocket Niak Weather, avec les attributs Lunar Phase',()=>{
+  const moon={state:'waxing_crescent',attributes:{
+    friendly_name:'Phase de la lune',illumination_fraction:34.5,moon_age:7.9,moon_distance_km:392456,
+    moonrise:'2026-10-25T13:30:00+01:00',moonset:'2026-10-25T23:00:00+01:00',
+    next_full_moon:'2026-11-03T12:00:00+01:00',next_new_moon:'2026-11-17T12:00:00+01:00',
+    moon_altitude_deg:23,moon_azimuth_deg:137
+  }};
+  let subscribed=0;
+  const card=new Card();card.setConfig({format:'moon',background_mode:'glass'});
+  card.hass={states:{'sensor.lunar_phase_moon_phase':moon},connection:{subscribeMessage(){subscribed++;return Promise.resolve(()=>{});}}};
+  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.equal(subscribed,0,'La carte Lune ne doit pas s’abonner au flux météo Niak');
+  assert.match(html,/Premier croissant/);
+  assert.match(html,/34,5/);
+  assert.match(html,/392[\s\u202f]?456/);
+  assert.match(html,/moon-disk/);
+  assert.match(html,/moonrise|Lever/);
+  assert.match(html,/Pleine lune/);
+});
+test('Lune : hémisphère sud, position droite et options masquables',()=>{
+  const card=new Card();
+  card.setConfig({format:'moon',moon_entity:'sensor.custom_moon',moon_position:'right',
+    moon_southern_hemisphere:true,show_title:false,show_date:false,show_source:false,
+    show_stats:false,show_details:false,show_chart:true});
+  card.hass={states:{'sensor.custom_moon':{state:'waning_gibbous',attributes:{moon_age:19,illumination_fraction:73}}}};
+  let html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/Gibbeuse décroissante/);
+  assert.match(html,/moon-right/);
+  assert.match(html,/rotate\(180deg\)/);
+  assert.doesNotMatch(html,/class="moon-stats"/);
+  assert.doesNotMatch(html,/class="moon-future"/);
+  assert.doesNotMatch(html,/<strong>Lune<\/strong>/);
+  assert.doesNotMatch(html,/Lunar Phase<\/span>/);
+  assert.doesNotMatch(html,/moon-current-date/);
+});
+test('Lune : absence de capteur et valeurs nulles gérées sans fausses informations',()=>{
+  const card=new Card();card.setConfig({format:'moon'});card.hass={states:{}};
+  assert.match(card.shadowRoot.innerHTML,/Capteur Lunar Phase introuvable/);
+  card.hass={states:{'sensor.moon_phase':{state:'new_moon',attributes:{moon_age:0,illumination_fraction:0,moon_distance_km:0}}}};
+  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/Nouvelle lune/);
+  assert.match(html,/0 %/);
+  assert.doesNotMatch(html,/NaN/);
+});
+test('Lune : l’éditeur expose le capteur et sa disposition',()=>{
+  const ed=Card.getConfigElement();ed.setConfig({format:'moon'});
+  ed.hass={connection:{},states:{'sensor.phase_moon':{attributes:{moon_age:5,illumination_fraction:12,friendly_name:'Phase de la lune'}}}};
+  const html=ed.shadowRoot.innerHTML;
+  assert.match(html,/Détection automatique/);
+  assert.match(html,/sensor.phase_moon/);
+  assert.match(html,/Position de la lune/);
+  assert.match(html,/Hémisphère sud/);
 });
