@@ -289,7 +289,7 @@ test('Synthèse : température à droite par défaut, bloc complet inchangé',()
     days:[{today:true,low:8,high:13}],bulletin:{summary:'Bulletin test'}};
   c._render();
   const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.match(html,/ov-grid temp-right/);
+  assert.match(html,/ov-grid layout-compact temp-right/);
   const block=html.match(/<div class="ov-now">[\s\S]*?<\/div><\/div><\/section>/);
   assert.match(html,/13,3/);assert.match(html,/↓ 8°/);
   assert.match(html,/↑ 13°/);assert.match(html,/\+2,4 °C\/h/);
@@ -301,7 +301,7 @@ test('Synthèse : température à gauche sans séparer valeur, min\/max, tendanc
     days:[{today:true,low:8,high:13}],bulletin:{summary:'Bulletin test'}};
   c._render();
   const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.match(html,/ov-grid temp-left/);
+  assert.match(html,/ov-grid layout-compact temp-left/);
   const from=html.indexOf('<div class="ov-now">');
   assert.ok(from>0);
   const block=html.slice(from,from+1500);
@@ -329,7 +329,7 @@ test('Synthèse : choix gauche/droite déplace vraiment le bloc dans le DOM',()=
     const temp=html.indexOf('<div class="ov-now">'),bulletin=html.indexOf('<div class="ov-copy">');
     assert.ok(temp>-1&&bulletin>-1);
     assert.equal(temp<bulletin,tempFirst,"Ordre des blocs : "+side);
-    assert.match(html,new RegExp('ov-grid temp-'+side));
+    assert.match(html,new RegExp('ov-grid layout-compact temp-'+side));
     assert.match(html,/13,3/);assert.match(html,/↓ 8°/);assert.match(html,/↑ 13°/);assert.match(html,/\+2,4 °C\/h/);
   }
 });
@@ -375,4 +375,6 @@ test('Synthèse : éditeur propose les deux dispositions indépendamment de gauc
   const start=script.indexOf('.ov-grid.layout-classic{display:flex;flex-direction:column');
   assert.ok(start>=0);
   assert.match(script.slice(start,start+1600),/\.ov-grid\.layout-classic\.temp-right \.ov-now\{align-self:flex-end/);
+  assert.match(script,/\.ov-grid\.layout-classic\{display:flex;flex-direction:column/);
+  assert.match(script,/\.ov-grid\.layout-classic \.ov-copy\{width:100%;grid-column:auto;grid-row:auto/);
 });
