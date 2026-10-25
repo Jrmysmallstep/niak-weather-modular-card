@@ -663,18 +663,23 @@ test('Air et Pollens : CSS compact appliqué à Aujourd’hui et aux Prévisions
   assert.match(script,/\.fm-section \.panels-two>\.nw-panel\{border:0!important;box-shadow:none!important;background:transparent!important/);
 });
 test('Solar Mask : suppression de bordure indépendante du mode compact',()=>{
-  const c=new Card();c.setConfig({format:'sun-home',sun_mask_border:false});
-  let css='',style=null;
-  const node={setConfig(){},shadowRoot:{
-    querySelector(){return style;},appendChild(s){style=s;},
-  },set hass(x){}};
-  c.shadowRoot.querySelector=()=>node;
-  c._hass={states:{'sensor.terrasse_solar_diagram':{state:'ok'}}};
-  c._config.sun_diagram_entity='sensor.terrasse_solar_diagram';
-  c._updateSolarChart();
-  css=style.textContent;assert.match(css,/border:0!important/);assert.match(css,/background:transparent!important/);
-  c._config.sun_mask_border=true;c._updateSolarChart();
-  assert.doesNotMatch(style.textContent,/border:0!important/);
+  const originalCreate=ctx.document.createElement;
+  ctx.document.createElement=(name)=>name==='style'?{id:'',textContent:''}:originalCreate(name);
+  try{
+    const c=new Card();c.setConfig({format:'sun-home',sun_mask_border:false});
+    let style=null;
+    const node={setConfig(){},shadowRoot:{
+      querySelector(){return style;},appendChild(s){style=s;},
+    },set hass(x){}};
+    c.shadowRoot.querySelector=()=>node;
+    c._hass={states:{'sensor.terrasse_solar_diagram':{state:'ok'}}};
+    c._config.sun_diagram_entity='sensor.terrasse_solar_diagram';
+    c._updateSolarChart();
+    assert.match(style.textContent,/border:0!important/);
+    assert.match(style.textContent,/background:transparent!important/);
+    c._config.sun_mask_border=true;c._updateSolarChart();
+    assert.doesNotMatch(style.textContent,/border:0!important/);
+  }finally{ctx.document.createElement=originalCreate;}
 });
 test('Éditeur : options de bordures séparées pour Soleil et Air/Pollens',()=>{
   const e=Card.getConfigElement();e.setConfig({format:'full',full_show_sun:true});
