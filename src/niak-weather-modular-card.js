@@ -1,12 +1,12 @@
 /**
- * Niak Weather Modular Card — 0.2.7-beta.1
+ * Niak Weather Modular Card — 0.2.8-beta.1
  * Standalone dashboard card consuming the original Niak Weather websocket view.
  * Inspired by Niak Weather by Niakman13 (MIT); see LICENSE and README.md.
  * No Python integration replacement, cloud calls or external JavaScript dependencies.
  */
 (() => {
   'use strict';
-  const VERSION = '0.2.7-beta.1';
+  const VERSION = '0.2.8-beta.1';
   const ELEMENT = 'niak-weather-modular-card';
   const FORMATS = [
     ['full','Carte complète Niak Weather','Carte officielle complète, personnalisable, avec Lune facultative'],
@@ -727,27 +727,33 @@
       '@container(max-width:650px){.nw-hero{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:"head" "now" "main" "blocks"!important}}');
 
     if(c.full_compact_air!==false)rules.push(
-      /* Air + Pollens together occupy one weather-panel column, not two wide panels. */
-      '.fm-section[aria-labelledby$="-today"] .fm-body .panels-two{box-sizing:border-box;width:calc((100% - 32px)/3);grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;align-items:stretch}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two>.nw-panel{min-width:0;padding:10px 8px!important;border-radius:12px}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .nw-panel-head{gap:5px!important}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .nw-panel-head h3{font-size:12px!important;line-height:1.25;white-space:normal!important;max-width:none!important}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .nw-panel-icon{width:25px!important;height:25px!important}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .nw-panel-icon ha-icon{--mdc-icon-size:15px}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .nw-badge{font-size:9px!important;margin-left:0!important;max-width:100%;overflow-wrap:anywhere}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .nw-sub{font-size:10px!important}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .aq{grid-template-columns:minmax(0,1fr)!important;justify-items:center;text-align:center;gap:5px!important}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .aq .disc{width:52px!important;height:52px!important}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .aq strong{font-size:12px!important}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .aq .nw-label,.fm-section[aria-labelledby$="-today"] .panels-two .aq small{font-size:9px!important}',
-      '.fm-section[aria-labelledby$="-today"] .panels-two .nw-details{font-size:10px!important}',
-      '@container(min-width:560px) and (max-width:859px){.fm-section[aria-labelledby$="-today"] .fm-body .panels-two{width:calc((100% - 16px)/2)}}',
-      '@container(max-width:559px){.fm-section[aria-labelledby$="-today"] .fm-body .panels-two{width:100%}}',
-      '@container(max-width:339px){.fm-section[aria-labelledby$="-today"] .fm-body .panels-two{grid-template-columns:minmax(0,1fr)!important}}');
+      /* Same compact Air + Pollens for Today AND Tomorrow. */
+      '.fm-section .fm-body>.panels-two{box-sizing:border-box;width:calc((100% - 32px)/3);grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;align-items:stretch}',
+      '.fm-section .panels-two>.nw-panel{min-width:0;padding:10px 8px!important;border-radius:12px}',
+      '.fm-section .panels-two .nw-panel-head{gap:5px!important}',
+      '.fm-section .panels-two .nw-panel-head h3{font-size:12px!important;line-height:1.25;white-space:normal!important;max-width:none!important}',
+      '.fm-section .panels-two .nw-panel-icon{width:25px!important;height:25px!important}',
+      '.fm-section .panels-two .nw-panel-icon ha-icon{--mdc-icon-size:15px}',
+      '.fm-section .panels-two .nw-badge{font-size:9px!important;margin-left:0!important;max-width:100%;overflow-wrap:anywhere}',
+      '.fm-section .panels-two .nw-sub{font-size:10px!important}',
+      '.fm-section .panels-two .aq{grid-template-columns:minmax(0,1fr)!important;justify-items:center;text-align:center;gap:5px!important}',
+      '.fm-section .panels-two .aq .disc{width:52px!important;height:52px!important}',
+      '.fm-section .panels-two .aq strong{font-size:12px!important}',
+      '.fm-section .panels-two .aq .nw-label,.fm-section .panels-two .aq small{font-size:9px!important}',
+      '.fm-section .panels-two .nw-details{font-size:10px!important}',
+      '@container(min-width:560px) and (max-width:859px){.fm-section .fm-body>.panels-two{width:calc((100% - 16px)/2)}}',
+      '@container(max-width:559px){.fm-section .fm-body>.panels-two{width:100%}}',
+      '@container(max-width:339px){.fm-section .fm-body>.panels-two{grid-template-columns:minmax(0,1fr)!important}}');
+    // The border setting applies to both Today's and Tomorrow's air/pollen panels.
+    if(c.full_air_border!==true)rules.push(
+      '.fm-section .panels-two>.nw-panel{border:0!important;box-shadow:none!important;background:transparent!important}');
     if(c.full_show_sun===true)rules.push(
-      '.grid3.niak-with-sun{grid-template-columns:minmax(0,1fr)!important}',
-      '@container(min-width:560px){.grid3.niak-with-sun{grid-template-columns:repeat(2,minmax(0,1fr))!important}.grid3.niak-with-sun>:last-child{grid-column:auto!important}}',
-      '@container(min-width:860px){.grid3.niak-with-sun{grid-template-columns:repeat(3,minmax(0,1fr))!important}}');
+      '.fm-section[aria-labelledby$="-today"] .fm-body.niak-sun-air-row{grid-template-columns:minmax(0,1fr)!important;align-items:start}',
+      '.fm-body.niak-sun-air-row>.full-native-sun{grid-column:1;order:1;min-width:0;width:100%}',
+      '.fm-body.niak-sun-air-row>.panels-two{grid-column:1;order:2;width:100%!important;min-width:0}',
+      '.fm-body.niak-sun-air-row>:not(.full-native-sun):not(.panels-two){grid-column:1/-1;order:0}',
+      '@container(min-width:560px){.fm-section[aria-labelledby$="-today"] .fm-body.niak-sun-air-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}}',
+      '@container(min-width:860px){.fm-section[aria-labelledby$="-today"] .fm-body.niak-sun-air-row{grid-template-columns:repeat(3,minmax(0,1fr))!important}}');
     return rules.join('\n');
   }
   function fullEditor(c){
@@ -774,6 +780,7 @@
       check('collapse_predictions','Replier Prévisions au départ',c.collapse_predictions===true)+
       check('full_show_atmo_tomorrow','Air et pollens de demain',opt(c,'full_show_atmo_tomorrow'))+
       '<label class="toggle"><input type="checkbox" name="full_compact_air" '+(c.full_compact_air!==false?'checked':'')+'/>Air extérieur + Pollens : largeur d’une carte</label>'+
+      '<label class="toggle"><input type="checkbox" name="full_air_border" '+(c.full_air_border===true?'checked':'')+'/>Afficher la bordure Air / Pollens (aujourd’hui et demain)</label>'+
       '</fieldset>'+ranks('banner_blocks','Bandeau — ordre et visibilité',FULL_BANNER)+
       ranks('today_blocks','Aujourd’hui — ordre et visibilité',FULL_TODAY)+
       ranks('forecast_blocks','Prévisions — ordre et visibilité',FULL_FORECAST)+
@@ -844,24 +851,25 @@
 
 
     _syncFullSun(native,wrapper){
-      const c=this._config,sun=this._fullSunElement;
-      if(!sun||c.full_show_sun!==true)return;
-      const root=native?.shadowRoot;
-      const grid=(c.full_sun_position===undefined||c.full_sun_position==='today')?
-        root?.querySelector?.('.fm-section[aria-labelledby$="-today"] .fm-body .grid3'):null;
-      root?.querySelectorAll?.('.grid3.niak-with-sun')?.forEach(el=>{
-        if(el!==grid)el.classList.remove('niak-with-sun');
+      const c=this._config,sun=this._fullSunElement,root=native?.shadowRoot;
+      const body=root?.querySelector?.('.fm-section[aria-labelledby$="-today"] .fm-body');
+      const inline=c.full_show_sun===true&&(c.full_sun_position===undefined||c.full_sun_position==='today');
+      // Leave native Lit-managed grid3 and panels-two in their own DOM positions.
+      root?.querySelectorAll?.('.fm-body.niak-sun-air-row')?.forEach(el=>{
+        if(!inline||el!==body)el.classList.remove('niak-sun-air-row');
       });
-      if(grid){
-        if(sun.parentElement!==grid)grid.appendChild(sun);
-        grid.classList.add('niak-with-sun');
+      if(!sun||c.full_show_sun!==true){body?.classList?.remove('niak-sun-air-row');return;}
+      if(inline){
+        if(!body){sun.remove?.();return;} // A folded Today section must also hide sunlight.
+        if(sun.parentElement!==body)body.appendChild(sun);
+        body.classList.add('niak-sun-air-row');
         sun.classList?.add('in-today');
-        if(sun.style)sun.style.order='';
+        if(sun.style)sun.style.order='1';
       }else{
+        body?.classList?.remove('niak-sun-air-row');
         if(sun.parentElement!==wrapper)wrapper.appendChild(sun);
         sun.classList?.remove('in-today');
-        if(sun.style)sun.style.order=(c.full_sun_position==='before'?-10:10)+
-          Math.max(1,Math.min(3,Number(c.full_sun_order)||1));
+        if(sun.style)sun.style.order=(c.full_sun_position==='before'?-10:10)+Math.max(1,Math.min(3,Number(c.full_sun_order)||1));
       }
     }
     _renderFullOfficial(){
@@ -915,7 +923,7 @@
         sun_difference_entity:c.sun_difference_entity,sun_duration_entity:c.sun_duration_entity,
         sun_diagram_entity:c.sun_diagram_entity,sun_elevation_entity:c.sun_elevation_entity,
         sun_show_times:c.sun_show_times,sun_show_diagram:c.sun_show_diagram,
-        sun_diagram_height:c.sun_diagram_height,sun_compact:c.sun_compact
+        sun_diagram_height:c.sun_diagram_height,sun_compact:c.sun_compact,sun_mask_border:c.sun_mask_border
       },c.full_sun_position,c.full_sun_order||1);
       addModule('radars',c.full_show_radars===true,{
         type:'custom:'+ELEMENT,format:'radars',background_mode:c.background_mode,
@@ -951,17 +959,24 @@
       const key=JSON.stringify(cfg);
       if(node._niakSolarKey!==key){node.setConfig(cfg);node._niakSolarKey=key;}
       if(this._hass)node.hass=this._hass;
-      if(node.shadowRoot?.querySelector&&node.shadowRoot?.appendChild){
+      const applyMaskStyle=()=>{
+        if(!node.shadowRoot?.querySelector||!node.shadowRoot?.appendChild)return;
         let style=node.shadowRoot.querySelector('#niak-compact-solar');
         if(!style){style=document.createElement('style');style.id='niak-compact-solar';node.shadowRoot.appendChild(style);}
-        style.textContent=c.sun_compact===false?'':[
-          'ha-card{padding:7px 5px 8px!important;background:transparent!important;border:none!important;box-shadow:none!important}',
+        const borderless=c.sun_mask_border!==true?[
+          ':host{--ha-card-border-width:0!important;--ha-card-box-shadow:none!important;--ha-card-background:transparent!important}',
+          'ha-card{border:0!important;box-shadow:none!important;outline:none!important;background:transparent!important}'
+        ]:[];
+        style.textContent=[...borderless,...(c.sun_compact===false?[]:[
+          'ha-card{padding:7px 5px 8px!important}',
           '.card-header{font-size:12px!important;padding-bottom:3px!important}',
           '.legend{font-size:10px!important;gap:3px 8px!important;margin-top:4px!important}',
           '.info-bar{margin-top:5px!important;padding:5px 0 0!important}',
           '.info-value{font-size:11px!important}'
-        ].join('');
-      }
+        ])].join('');
+      };
+      applyMaskStyle();
+      if(node.updateComplete?.then)node.updateComplete.then(applyMaskStyle).catch(()=>{});
     }
     _renderLocal(){
       const c=this._config;
@@ -1060,6 +1075,7 @@
       toggle('sun_show_times','Afficher les quatre horaires du soleil')+
       toggle('sun_show_diagram','Afficher la carte Solar Mask')+
       '<label class="toggle"><input type="checkbox" name="sun_compact" '+(c.sun_compact!==false?'checked':'')+'/>Affichage compact (recommandé)</label>'+
+      '<label class="toggle"><input type="checkbox" name="sun_mask_border" '+(c.sun_mask_border===true?'checked':'')+'/>Afficher la bordure Solar Mask</label>'+
       text('sun_diagram_height','Hauteur du diagramme (px, 220 par défaut en compact)','220')+
       '<p class="hint">La carte Solar Mask et son intégration doivent être installées pour afficher le diagramme. Les horaires sont les prochains événements de sun.sun.</p></fieldset>':'';
     const radars=radar?'<fieldset><legend>Radars de pluie — URL à renseigner</legend>'+

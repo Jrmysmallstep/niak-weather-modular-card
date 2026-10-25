@@ -630,19 +630,21 @@ test('Carte complète : Air et Pollens partagent une seule colonne de météo',(
   assert.match(html,/name="full_compact_air"/);
   assert.match(html,/Air extérieur \+ Pollens : largeur d’une carte/);
 });
-test('Carte complète : Soleil dans Aujourd’hui, grille de trois maximum',()=>{
+test('Carte complète : Soleil et Air/Pollens partagent la grille native Aujourd’hui',()=>{
   const c=new Card();c.setConfig({format:'full',full_show_sun:true,full_sun_position:'today'});
-  const classList={values:new Set(),add(x){this.values.add(x);},remove(x){this.values.delete(x);}};
-  const sun={parentElement:null,style:{},classList:{add(x){this.value=x;},remove(x){this.value='';}}};
+  const flags={set:new Set(),add(x){this.set.add(x)},remove(x){this.set.delete(x)}};
+  const body={classList:flags,appendChild(x){x.parentElement=this;}};
   const wrap={appendChild(x){x.parentElement=this;}};
-  const grid={appendChild(x){x.parentElement=this;},classList};
-  const native={shadowRoot:{querySelector(x){return x.includes('grid3')?grid:null;},querySelectorAll(){return [grid];}}};
+  const sun={parentElement:wrap,style:{},classList:{add(){},remove(){}},remove(){this.parentElement=null;}};
+  const native={shadowRoot:{
+    querySelector(s){return s.includes('fm-body')?body:null;},
+    querySelectorAll(){return [body];}
+  }};
   c._fullSunElement=sun;c._syncFullSun(native,wrap);
-  assert.equal(sun.parentElement,grid);assert.ok(classList.values.has('niak-with-sun'));
+  assert.equal(sun.parentElement,body);assert.ok(flags.set.has('niak-sun-air-row'));
   c._config.full_sun_position='after';c._syncFullSun(native,wrap);
-  assert.equal(sun.parentElement,wrap);
-  assert.ok(!classList.values.has('niak-with-sun'));
-  assert.match(script,/grid3\.niak-with-sun\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
+  assert.equal(sun.parentElement,wrap);assert.ok(!flags.set.has('niak-sun-air-row'));
+  assert.match(script,/niak-sun-air-row\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
 });
 test('Soleil : éditeur propose taille compacte et graphique Solar Mask',()=>{
   const e=Card.getConfigElement();e.setConfig({format:'full',full_show_sun:true});
@@ -651,4 +653,32 @@ test('Soleil : éditeur propose taille compacte et graphique Solar Mask',()=>{
   assert.match(html,/name="sun_compact"/);
   assert.match(html,/Afficher la carte Solar Mask/);
   assert.match(html,/Hauteur du diagramme/);
+});
+
+
+test('Air et Pollens : CSS compact appliqué à Aujourd’hui et aux Prévisions',()=>{
+  assert.match(script,/\.fm-section \.fm-body>\.panels-two\{box-sizing:border-box/);
+  assert.doesNotMatch(script,/\.fm-section\[aria-labelledby\$="-today"\] \.fm-body \.panels-two\{box-sizing:border-box/);
+  assert.match(script,/\.fm-body\.niak-sun-air-row>\.panels-two\{grid-column:1;order:2;width:100%!important/);
+  assert.match(script,/\.fm-section \.panels-two>\.nw-panel\{border:0!important;box-shadow:none!important;background:transparent!important/);
+});
+test('Solar Mask : suppression de bordure indépendante du mode compact',()=>{
+  const c=new Card();c.setConfig({format:'sun-home',sun_mask_border:false});
+  let css='',style=null;
+  const node={setConfig(){},shadowRoot:{
+    querySelector(){return style;},appendChild(s){style=s;},
+  },set hass(x){}};
+  c.shadowRoot.querySelector=()=>node;
+  c._hass={states:{'sensor.terrasse_solar_diagram':{state:'ok'}}};
+  c._config.sun_diagram_entity='sensor.terrasse_solar_diagram';
+  c._updateSolarChart();
+  css=style.textContent;assert.match(css,/border:0!important/);assert.match(css,/background:transparent!important/);
+  c._config.sun_mask_border=true;c._updateSolarChart();
+  assert.doesNotMatch(style.textContent,/border:0!important/);
+});
+test('Éditeur : options de bordures séparées pour Soleil et Air/Pollens',()=>{
+  const e=Card.getConfigElement();e.setConfig({format:'full',full_show_sun:true});
+  assert.match(e.shadowRoot.innerHTML,/name="sun_mask_border"/);
+  assert.match(e.shadowRoot.innerHTML,/name="full_air_border"/);
+  assert.match(e.shadowRoot.innerHTML,/aujourd’hui et demain/);
 });

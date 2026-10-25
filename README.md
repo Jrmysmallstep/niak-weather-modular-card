@@ -2,7 +2,7 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.2.7-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.2.8-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Les formats météo **ne remplacent pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
@@ -98,7 +98,26 @@ entry_id: "identifiant_de_l_entree_niak"
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
 
-### Présentation compacte Soleil + Air / Pollens — 0.2.7-beta.1
+### Grille commune et bordures facultatives — 0.2.8-beta.1
+
+Dans la section **Aujourd’hui** de la carte complète, `full_sun_position: today` place désormais **Soleil et le duo Air extérieur/Pollens dans une même grille**, côte à côte lorsque la largeur le permet, avec **3 emplacements maximum par ligne** (2 sur tablette et 1 sur mobile). Les blocs de pluie/vent/pression restent sur la rangée précédente. Les panneaux Niak d’origine ne sont pas déplacés : seule la carte Soleil est insérée dans la grille, pour respecter la structure Lit.
+
+`full_compact_air: true` applique le même format réduit à Air/Pollens **aujourd’hui et demain**, chacun constituant la moitié d’un emplacement météo. `full_air_border: false` (par défaut) supprime leurs bordures et leur fond internes dans les deux sections. Dans la carte Soleil, `sun_mask_border: false` (par défaut) supprime la bordure et le fond **internes au composant Solar Mask**, indépendamment de l'option `sun_compact`; les deux options sont accessibles dans l'éditeur visuel.
+
+```yaml
+type: custom:niak-weather-modular-card
+format: full
+full_show_sun: true
+full_sun_position: today
+sun_show_diagram: true
+sun_compact: true
+sun_mask_border: false
+full_compact_air: true
+full_air_border: false
+full_show_atmo_tomorrow: true
+```
+
+### Présentation compacte Soleil + Air / Pollens — 0.2.8-beta.1
 
 La carte **Soleil & Ensoleillement** adopte par défaut un rendu compact de type Pluie / Vent / Pression : petits indicateurs, horaires raccourcis et **graphique Solar Mask conservé** à 220 px de hauteur. En YAML, `sun_compact: false` restaure les grandes dimensions et `sun_diagram_height` règle la hauteur (plafond compact 260 px).
 
@@ -117,7 +136,7 @@ sun_diagram_height: 220
 full_compact_air: true
 ```
 
-## Soleil & Ensoleillement et Radars — 0.2.7-beta.1
+## Soleil & Ensoleillement et Radars — 0.2.8-beta.1
 
 Ces deux cartes existent **indépendamment** et peuvent être activées comme sections facultatives dans la carte complète `format: full`. Niak Weather continue de produire seul le bulletin du jour, exclusivement à partir des prévisions de son fournisseur.
 
@@ -172,7 +191,7 @@ radar_url_forecast: ""
 
 Les modules supplémentaires sont **désactivés par défaut** afin de préserver les tableaux de bord existants. Leur emplacement et leur ordre peuvent être modifiés dans l'éditeur visuel.
 
-## Carte complète officielle avec options supplémentaires — 0.2.7-beta.1
+## Carte complète officielle avec options supplémentaires — 0.2.8-beta.1
 
 Le format `full` **embarque directement la carte originale Niak Weather** (`custom:niak-weather-card`) pour conserver son rendu, ses animations, la frise automatique, ses graphiques et ses sections repliables. L'intégration Niak Weather et sa ressource frontend doivent être chargées. Nos réglages n'altèrent pas le dépôt original.
 
@@ -206,7 +225,7 @@ La carte permet de déplacer et masquer les éléments des trois listes dans son
 
 Les styles additionnels reposent sur les classes CSS de la version actuelle de Niak Weather. Si la carte officielle change de structure dans une mise à jour future, certaines options visuelles pourront demander une adaptation, sans affecter ses données.
 
-## Carte Air extérieur complète — 0.2.7-beta.1
+## Carte Air extérieur complète — 0.2.8-beta.1
 
 La carte `format: air` reprend l'indice de qualité de l'air de Niak Weather avec une jauge segmentée colorée (échelle ATMO), le polluant le plus défavorable, la liste des polluants et leurs concentrations lorsqu'elles existent. Les données anciennes et les indices spéciaux (code 7) sont distingués.
 
