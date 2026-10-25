@@ -29,20 +29,13 @@ Chaque carte est disponible dans le sélecteur **Ajouter une carte** sous le nom
 
 ## Installation HACS — dépôt personnalisé
 
-1. Installer et configurer **Niak Weather** officiel via HACS (**Intégration**).
-2. Publier le contenu de ce projet dans un **dépôt GitHub public**, par exemple `Jrmysmallstep/niak-weather-modular-card`. Le dépôt doit contenir `hacs.json`, `README.md` et `dist/niak-weather-modular-card.js` (respecter cette arborescence : ne pas déposer uniquement le ZIP).
-3. Dans HACS : `⋮` → **Dépôts personnalisés**, saisir l'URL du dépôt GitHub, choisir **Tableau de bord (Dashboard)** et valider.
-4. Chercher **Niak Weather Modular Cards** dans HACS, puis **Télécharger**.
-5. Si HACS ne le fait pas automatiquement, ajouter dans **Paramètres → Tableaux de bord → Ressources** :
+1. Installer et configurer **Niak Weather** officiel via HACS (catégorie **Intégration**).
+2. Dans HACS : ouvrir **Dépôts personnalisés** (menu ⋮), saisir `https://github.com/Jrmysmallstep/niak-weather-modular-card`, sélectionner **Tableau de bord (Dashboard)**, puis valider.
+3. Rechercher **Niak Weather Modular Cards**, puis choisir **Télécharger**. Tant qu'aucune release GitHub n'est publiée, HACS utilise la branche `main`.
+4. HACS ajoute normalement la ressource automatiquement. Dans le cas contraire, ouvrir **Paramètres → Tableaux de bord → Ressources** et ajouter `/hacsfiles/niak-weather-modular-card/niak-weather-modular-card.js` comme **module JavaScript**.
+5. Actualiser Home Assistant, puis utiliser **Ajouter une carte** et choisir un format **Niak Modular · Vent**, **Niak Modular · Pression**, etc.
 
-   ```text
-   /hacsfiles/niak-weather-modular-card/niak-weather-modular-card.js
-   ```
-
-   Type : **module JavaScript**.
-6. Recharger le navigateur / vider le cache du frontend si nécessaire. Dans l'éditeur de dashboard : **Ajouter une carte**, puis choisir **Niak Modular · Vent**, **Niak Modular · Pression**, etc.
-
-Les mises à jour ultérieures se font via HACS après publication de nouvelles versions dans ce dépôt.
+Les mises à jour ultérieures se feront via HACS. Cette première version est une bêta, à tester avec une installation Home Assistant réelle.
 
 ### Installation manuelle (sans HACS)
 
