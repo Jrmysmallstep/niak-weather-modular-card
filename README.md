@@ -2,7 +2,7 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.2.0-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.2.1-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Les formats météo **ne remplacent pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
@@ -95,14 +95,15 @@ entry_id: "identifiant_de_l_entree_niak"
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
 
-## Refonte des cartes météo et visuel Lune — version 0.2.0-beta.1
+## Refonte des cartes météo et visuel Lune — version 0.2.1-beta.1
 
-Une carte principale **Synthèse / En ce moment** (`format: overview`) fusionne le rendu des deux anciennes cartes. La température actuelle est affichée au dixième, accompagnée des minimales/maximales prévues et de la tendance mesurée en °C/h (uniquement si Niak Weather fournit ces données). Le bulletin du jour est intégré et peut être masqué. La frise Événements est facultative.
+Une carte principale **Synthèse / En ce moment** (`format: overview`) fusionne le rendu des deux anciennes cartes. La température actuelle est affichée au dixième, accompagnée des minimales/maximales prévues et de la tendance mesurée en °C/h (uniquement si Niak Weather fournit ces données). Le bulletin du jour est intégré et peut être masqué. La frise Événements est facultative. **Depuis 0.2.1-beta.1**, `temperature_position: left` ou `right` permet de déplacer ensemble le bloc température (valeur, min/max, tendance et source). L'éditeur visuel propose ce même choix. Sur une carte étroite, les sections s'empilent verticalement et le bloc température reste en premier.
 
 ```yaml
 type: custom:niak-weather-modular-card
 format: overview
 background_mode: glass
+temperature_position: right  # right (défaut) ou left
 show_title: true
 show_date: true
 show_source: true
@@ -128,7 +129,7 @@ moon_visual_mode: original
 
 ## Carte Lune indépendante — Lunar Phase
 
-Depuis **0.2.0-beta.1**, le format `moon` ajoute une carte inspirée de la disposition de [Lunar Phase Card](https://github.com/ngocjohn/lunar-phase-card), dans le style de Niak Weather Modular Cards (fonds `glass`, `theme`, `transparent`, grille responsive, thème HA). Par défaut, le visuel utilise les photographies de la carte Lunar Phase originale (chargement en ligne) ; le mode `generated` dessine localement un SVG. Aucun calcul astronomique supplémentaire n'est réalisé.
+Depuis **0.2.1-beta.1**, le format `moon` ajoute une carte inspirée de la disposition de [Lunar Phase Card](https://github.com/ngocjohn/lunar-phase-card), dans le style de Niak Weather Modular Cards (fonds `glass`, `theme`, `transparent`, grille responsive, thème HA). Par défaut, le visuel utilise les photographies de la carte Lunar Phase originale (chargement en ligne) ; le mode `generated` dessine localement un SVG. Aucun calcul astronomique supplémentaire n'est réalisé.
 
 **Pré-requis pour ce format uniquement :** installer l'intégration [Lunar Phase de ngocjohn](https://github.com/ngocjohn/lunar-phase) dans Home Assistant. Le module sélectionne automatiquement son capteur « Phase de la lune » à partir de ses attributs, ou accepte `moon_entity` explicite. La carte Lune ne nécessite **pas** l'intégration Niak Weather et n'utilise **pas** son WebSocket.
 
@@ -151,7 +152,7 @@ La version initiale reprend la disposition générale (disque lunaire + informat
 
 ## Cartes de mesures complémentaires
 
-La version **0.2.0-beta.1** ajoute une carte `extras` qui reprend les cinq pastilles de Niak Weather sans conteneur « Aujourd'hui ». Les formats `solar`, `uv`, `lux`, `humidity` et `dew` affichent chaque mesure séparément.
+La version **0.2.1-beta.1** ajoute une carte `extras` qui reprend les cinq pastilles de Niak Weather sans conteneur « Aujourd'hui ». Les formats `solar`, `uv`, `lux`, `humidity` et `dew` affichent chaque mesure séparément.
 
 ```yaml
 type: custom:niak-weather-modular-card
@@ -170,7 +171,7 @@ Pour afficher uniquement humidité et rosée, conserver seulement `humidity` et 
 
 ## Carte Ressenti indépendante
 
-Depuis **0.2.0-beta.1**, le format `comfort` reprend l'affichage de Niak Weather : valeur de ressenti, libellé, facteurs, bouton d'information et **jauge colorée de −5 °C à 45 °C** avec les deux repères du thermomètre (lorsque disponible) et du ressenti.
+Depuis **0.2.1-beta.1**, le format `comfort` reprend l'affichage de Niak Weather : valeur de ressenti, libellé, facteurs, bouton d'information et **jauge colorée de −5 °C à 45 °C** avec les deux repères du thermomètre (lorsque disponible) et du ressenti.
 
 ```yaml
 type: custom:niak-weather-modular-card

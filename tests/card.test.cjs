@@ -281,3 +281,41 @@ test('Lune : images originales, personnalisées et SVG avec repli',()=>{
  html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
  assert.doesNotMatch(html,/class="moon-photo"/);assert.match(html,/moon-disk/);
 });
+
+
+test('Synthèse : température à droite par défaut, bloc complet inchangé',()=>{
+  const c=new Card();c.setConfig({format:'overview'});
+  c._view={...view,now:{...view.now,temperature:13.3,trend:2.4},
+    days:[{today:true,low:8,high:13}],bulletin:{summary:'Bulletin test'}};
+  c._render();
+  const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/ov-grid temp-right/);
+  const block=html.match(/<div class="ov-now">[\s\S]*?<\/div><\/div><\/section>/);
+  assert.match(html,/13,3/);assert.match(html,/↓ 8°/);
+  assert.match(html,/↑ 13°/);assert.match(html,/\+2,4 °C\/h/);
+});
+
+test('Synthèse : température à gauche sans séparer valeur, min\/max, tendance et source',()=>{
+  const c=new Card();c.setConfig({format:'overview',temperature_position:'left'});
+  c._view={...view,now:{...view.now,temperature:13.3,trend:2.4,temperatureSource:'Station locale'},
+    days:[{today:true,low:8,high:13}],bulletin:{summary:'Bulletin test'}};
+  c._render();
+  const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/ov-grid temp-left/);
+  const from=html.indexOf('<div class="ov-now">');
+  assert.ok(from>0);
+  const block=html.slice(from,from+1500);
+  assert.match(block,/13,3/);assert.match(block,/↓ 8°/);
+  assert.match(block,/↑ 13°/);assert.match(block,/\+2,4 °C\/h/);
+  assert.match(block,/Station locale/);
+  assert.match(html,/ov-bulletin/);
+});
+
+test('Synthèse : position du bloc température proposée dans l’éditeur',()=>{
+  const editor=Card.getConfigElement();editor.setConfig({format:'overview',temperature_position:'left'});
+  const html=editor.shadowRoot.innerHTML;
+  assert.match(html,/Position du bloc température/);
+  assert.match(html,/name="temperature_position"/);
+  assert.match(html,/value="left" selected/);
+  assert.match(html,/Droite \(par défaut\)/);
+});

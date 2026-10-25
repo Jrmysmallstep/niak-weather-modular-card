@@ -1,12 +1,12 @@
 /**
- * Niak Weather Modular Card — 0.2.0-beta.1
+ * Niak Weather Modular Card — 0.2.1-beta.1
  * Standalone dashboard card consuming the original Niak Weather websocket view.
  * Inspired by Niak Weather by Niakman13 (MIT); see LICENSE and README.md.
  * No Python integration replacement, cloud calls or external JavaScript dependencies.
  */
 (() => {
   'use strict';
-  const VERSION = '0.2.0-beta.1';
+  const VERSION = '0.2.1-beta.1';
   const ELEMENT = 'niak-weather-modular-card';
   const FORMATS = [
     ['overview','Synthèse / En ce moment','Conditions, min/max, bulletin, tendance et événements'],
@@ -42,7 +42,7 @@
   const EXTRA_FORMATS=new Set(['extras','solar','uv','lux','humidity','dew']);
   const BACKGROUND_MODES = [['glass', 'Verre dépoli (semi-transparent)'], ['theme', 'Thème Home Assistant'], ['transparent', 'Transparent (sans fond)']];
   const OPTIONS = ['show_title','show_source','show_date','show_bulletin','show_temp_range','show_temp_trend','show_events','show_chart','show_stats','show_details','show_border','show_animations'];
-  const DEFAULTS = {background_mode:'glass',show_title:true,show_source:true,show_date:true,show_bulletin:true,show_temp_range:true,show_temp_trend:true,show_events:false,show_chart:true,show_stats:true,show_details:true,show_border:true,show_animations:true};
+  const DEFAULTS = {background_mode:'glass',temperature_position:'right',show_title:true,show_source:true,show_date:true,show_bulletin:true,show_temp_range:true,show_temp_trend:true,show_events:false,show_chart:true,show_stats:true,show_details:true,show_border:true,show_animations:true};
   const icon = (name, cls = '') => `<ha-icon class="${cls}" icon="${esc(name || 'mdi:weather-partly-cloudy')}"></ha-icon>`;
   function esc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   function num(n, digits=1) { return Number.isFinite(Number(n)) && n !== null && n !== '' ? new Intl.NumberFormat('fr-FR',{maximumFractionDigits:digits}).format(Number(n)) : '—'; }
@@ -162,7 +162,7 @@
           (source(n.temperatureSource||n.source,c)?'<div class="ov-source">'+source(n.temperatureSource||n.source,c)+'</div>':'')+'</div>',
       sky=opt(c,'show_animations')&&customElements.get('niak-weather-sky')?'<div class="sky-layer ov-sky"><niak-weather-sky></niak-weather-sky></div>':'',
       events=opt(c,'show_events')?'<div class="ov-events">'+eventList(v,{...c,show_title:true})+'</div>':'';
-    return '<section class="overview">'+sky+title+'<div class="ov-grid"><div class="ov-copy">'+
+    return '<section class="overview">'+sky+title+'<div class="ov-grid '+(c.temperature_position==='left'?'temp-left':'temp-right')+'"><div class="ov-copy">'+
       (alerts?'<div class="chips">'+alerts+'</div>':'')+bulletin+'</div>'+current+'</div>'+events+'</section>';
   }
   function moonVisual(fraction,waxing,south,age,phase,c){
@@ -355,6 +355,12 @@
     .ov-season ha-icon{--mdc-icon-size:16px}
     .ov-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,36%);gap:22px;min-width:0}
     .ov-copy{display:flex;flex-direction:column;justify-content:flex-end;gap:15px;min-width:0}
+    /* Le bloc température est toujours indivisible : valeur, mini/maxi, tendance, source. */
+    .ov-grid.temp-left{grid-template-columns:minmax(220px,36%) minmax(0,1fr)}
+    .ov-grid.temp-left .ov-now{grid-column:1;grid-row:1;align-items:flex-start;text-align:left}
+    .ov-grid.temp-left .ov-copy{grid-column:2;grid-row:1}
+    .ov-grid.temp-left .ov-condition{justify-content:flex-start}
+    .ov-grid.temp-left .ov-now .ov-source{align-self:flex-start}
     .ov-bulletin{display:grid;gap:10px;max-width:72ch}
     .ov-bulletin p{margin:0;font-size:15px;line-height:1.6;font-weight:500}
     .ov-now{display:flex;flex-direction:column;align-items:flex-end;text-align:right;gap:8px;min-width:0}
@@ -370,6 +376,9 @@
     .ov-events .inner.events{padding:3px 0}
     @container(max-width:630px){.overview{padding:15px 16px}.ov-grid{grid-template-columns:1fr;gap:18px}
       .ov-now{grid-row:1;align-items:flex-start;text-align:left}.ov-condition{justify-content:flex-start}
+      .ov-grid.temp-left{grid-template-columns:1fr}
+      .ov-grid.temp-left .ov-now{grid-column:1;grid-row:1}
+      .ov-grid.temp-left .ov-copy{grid-column:1;grid-row:2}
       .ov-copy{grid-row:2}.ov-temp{font-size:48px}.ov-bulletin p{font-size:14px}}
     .moon-photo{width:100%;max-width:160px;height:auto;aspect-ratio:1;object-fit:contain;filter:drop-shadow(0 8px 15px #0004)}
     .moon-fallback{display:none;width:100%;height:100%;place-items:center}
@@ -478,7 +487,10 @@
     get hass(){return this._hass;}
     _change(event){const el=event.target;let c={...this._config};if(el.dataset.extra){const kinds=new Set(c.extras_blocks||EXTRA_DEFAULT);el.checked?kinds.add(el.value):kinds.delete(el.value);c.extras_blocks=EXTRA_TYPES.map(([id])=>id).filter(id=>kinds.has(id));}else if(el.dataset.summary){const set=new Set(c.blocks||SUMMARY);el.checked?set.add(el.value):set.delete(el.value);c.blocks=SUMMARY.filter(x=>set.has(x));}else if(el.type==='checkbox')c[el.name]=el.checked;else if(el.name==='entry_id')c.entry_id=el.value||undefined;else c[el.name]=el.value;this._config=c;this.dispatchEvent(new CustomEvent('config-changed',{detail:{config:c},bubbles:true,composed:true}));this._render();}
     _render(){const c=this._config;const fields=OPTIONS.filter(key=>c.format==='overview'||!['show_bulletin','show_temp_range','show_temp_trend','show_events'].includes(key)).map(key=>`<label class="toggle"><input type="checkbox" name="${key}" ${opt(c,key)?'checked':''}/>${esc({'show_title':'Afficher le titre','show_source':'Afficher la source','show_date':'Afficher la date','show_bulletin':'Afficher le bulletin du jour','show_temp_range':'Afficher min/max','show_temp_trend':'Afficher la tendance °C/h','show_events':'Afficher les événements','show_chart':'Afficher le graphique','show_stats':'Afficher les statistiques','show_details':'Afficher les détails','show_border':'Afficher les bordures','show_animations':'Afficher le ciel animé (si disponible)'}[key])}</label>`).join('');const extraOptions=c.format==='extras'?`<fieldset><legend>Indicateurs à afficher</legend>${EXTRA_TYPES.map(([id,title])=>`<label class="toggle"><input type="checkbox" data-extra="1" value="${id}" ${(c.extras_blocks||EXTRA_DEFAULT).includes(id)?'checked':''}/>${esc(title)}</label>`).join('')}</fieldset>`:'';const summaries=c.format==='summary'?`<fieldset><legend>Contenu de la synthèse</legend>${SUMMARY.map(x=>`<label class="toggle"><input data-summary="1" type="checkbox" value="${x}" ${(c.blocks||SUMMARY).includes(x)?'checked':''}/>${esc(FORMATS.find(a=>a[0]===x)[1])}</label>`).join('')}</fieldset>`:'';const backgroundSelector=`<label>Fond de la carte<select name="background_mode">${BACKGROUND_MODES.map(([value,label])=>`<option value="${value}" ${c.background_mode===value?'selected':''}>${esc(label)}</option>`).join('')}</select></label>`;const moonStates=Object.entries(this._hass?.states||{}).filter(([id,s])=>id.startsWith('sensor.')&&s?.attributes?.moon_age!==undefined&&s.attributes.illumination_fraction!==undefined);
-    const moonVis=c.format==='moon'?`<fieldset><legend>Visuel de la Lune</legend>
+    const tempPosition=c.format==='overview'?`<label>Position du bloc température<select name="temperature_position">
+  <option value="right" ${c.temperature_position!=='left'?'selected':''}>Droite (par défaut)</option>
+  <option value="left" ${c.temperature_position==='left'?'selected':''}>Gauche</option>
+</select></label>`:'';const moonVis=c.format==='moon'?`<fieldset><legend>Visuel de la Lune</legend>
    <label>Source du visuel<select name="moon_visual_mode">${[['original','Images originales (Internet)'],['generated','SVG local généré'],['image','Image PNG/JPG/WebP personnalisée'],['svg','Fichier SVG personnalisé']].map(([id,name])=>`<option value="${id}" ${(c.moon_visual_mode||'original')===id?'selected':''}>${esc(name)}</option>`).join('')}</select></label>
    <label>URL de l’image ou du SVG<input type="text" name="moon_image_url" placeholder="/local/lune/{index}_moon.svg" value="${esc(c.moon_image_url||'')}"/></label>
    <span class="hint">{index} vaut 0–30, {phase} vaut le code de la phase. Repli sur SVG si l’image échoue.</span></fieldset>`:'';const moonSettings=c.format==='moon'? `<fieldset><legend>Lunar Phase — capteur et disposition</legend>
@@ -486,7 +498,7 @@
       <label>Position de la lune<select name="moon_position"><option value="left" ${c.moon_position!=='right'?'selected':''}>Gauche</option><option value="right" ${c.moon_position==='right'?'selected':''}>Droite</option></select></label>
       <label class="toggle"><input name="moon_southern_hemisphere" type="checkbox" ${c.moon_southern_hemisphere===true?'checked':''}/>Hémisphère sud (orientation)</label>
       <span class="hint">Source : ngocjohn/lunar-phase. Informations locales, sans service tiers.</span>
-    </fieldset>`:'';const entries=this._entries.length>1?`<label>Lieu Niak Weather<select name="entry_id"><option value="">Choisir…</option>${this._entries.map(x=>`<option value="${esc(x.entry_id)}" ${c.entry_id===x.entry_id?'selected':''}>${esc(x.title)}</option>`).join('')}</select></label>`:'';this.shadowRoot.innerHTML=`<style>:host{display:block;color:var(--primary-text-color);font-family:inherit;padding:12px}.form{display:grid;gap:15px}label{display:grid;gap:6px;font-size:14px}select,input[type=text]{box-sizing:border-box;padding:10px;background:var(--card-background-color,var(--primary-background-color,#fff));color:var(--primary-text-color);border:1px solid var(--divider-color,#ddd);border-radius:8px;width:100%}.toggle{display:flex;align-items:center;gap:10px}.toggle input{width:18px;height:18px;accent-color:var(--primary-color,#648bb2)}fieldset{border:1px solid var(--divider-color,#ddd);border-radius:9px;display:grid;gap:10px}legend{font-weight:700}.hint{color:var(--secondary-text-color);font-size:12px}</style><div class="form"><label>Type de carte<select name="format">${FORMATS.map(x=>`<option value="${x[0]}" ${c.format===x[0]?'selected':''}>${esc(x[1])}</option>`).join('')}</select></label>${entries}${summaries}${extraOptions}${moonSettings}${moonVis}<fieldset><legend>Apparence et personnalisation</legend>${backgroundSelector}${fields}</fieldset><p class="hint">${c.format==='moon'?'La carte Lune nécessite Lunar Phase (ngocjohn), pas Niak Weather.':'Niak Weather officiel doit être installé et configuré. Le choix du lieu est nécessaire si plusieurs lieux existent.'}</p></div>`;}
+    </fieldset>`:'';const entries=this._entries.length>1?`<label>Lieu Niak Weather<select name="entry_id"><option value="">Choisir…</option>${this._entries.map(x=>`<option value="${esc(x.entry_id)}" ${c.entry_id===x.entry_id?'selected':''}>${esc(x.title)}</option>`).join('')}</select></label>`:'';this.shadowRoot.innerHTML=`<style>:host{display:block;color:var(--primary-text-color);font-family:inherit;padding:12px}.form{display:grid;gap:15px}label{display:grid;gap:6px;font-size:14px}select,input[type=text]{box-sizing:border-box;padding:10px;background:var(--card-background-color,var(--primary-background-color,#fff));color:var(--primary-text-color);border:1px solid var(--divider-color,#ddd);border-radius:8px;width:100%}.toggle{display:flex;align-items:center;gap:10px}.toggle input{width:18px;height:18px;accent-color:var(--primary-color,#648bb2)}fieldset{border:1px solid var(--divider-color,#ddd);border-radius:9px;display:grid;gap:10px}legend{font-weight:700}.hint{color:var(--secondary-text-color);font-size:12px}</style><div class="form"><label>Type de carte<select name="format">${FORMATS.map(x=>`<option value="${x[0]}" ${c.format===x[0]?'selected':''}>${esc(x[1])}</option>`).join('')}</select></label>${entries}${summaries}${extraOptions}${moonSettings}${moonVis}<fieldset><legend>Apparence et personnalisation</legend>${backgroundSelector}${tempPosition}${fields}</fieldset><p class="hint">${c.format==='moon'?'La carte Lune nécessite Lunar Phase (ngocjohn), pas Niak Weather.':'Niak Weather officiel doit être installé et configuré. Le choix du lieu est nécessaire si plusieurs lieux existent.'}</p></div>`;}
   }
   if(!customElements.get(ELEMENT))customElements.define(ELEMENT,NiakModularCard);
   if(!customElements.get('niak-weather-modular-editor'))customElements.define('niak-weather-modular-editor',NiakModularEditor);
