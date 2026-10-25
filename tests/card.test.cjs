@@ -87,3 +87,22 @@ test('éditeur visuel déclaré',()=>{
   assert.ok(el.shadowRoot.innerHTML.includes('Contenu de la synthèse'));
   assert.ok(el.shadowRoot.innerHTML.includes('Afficher la source'));
 });
+
+
+test('fond semi-transparent par défaut, thème et transparent configurables',()=>{
+  for(const [mode,expected] of [[undefined,'bg-glass'],['glass','bg-glass'],['theme','bg-theme'],['transparent','bg-transparent']]) {
+    const c=new Card();c.setConfig({format:'wind',...(mode?{background_mode:mode}:{})});c._view=view;c._render();
+    assert.match(c.shadowRoot.innerHTML,new RegExp('<ha-card class="'+expected+' '));
+  }
+  assert.match(script,/backdrop-filter:blur\(12px\)/);
+  assert.match(script,/--nw-card-surface:transparent/);
+  assert.match(script,/--nw-bg:var\(--ha-card-background/);
+});
+
+test('l’éditeur propose les trois modes de fond',()=>{
+  const el=Card.getConfigElement();el.setConfig({format:'wind',background_mode:'theme'});
+  assert.match(el.shadowRoot.innerHTML,/Verre dépoli/);
+  assert.match(el.shadowRoot.innerHTML,/Thème Home Assistant/);
+  assert.match(el.shadowRoot.innerHTML,/Transparent \(sans fond\)/);
+  assert.match(el.shadowRoot.innerHTML,/value="theme" selected/);
+});

@@ -2,7 +2,7 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.1.0-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.1.1-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Cette carte **ne remplace pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
@@ -94,11 +94,31 @@ entry_id: "identifiant_de_l_entree_niak"
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
 
+## Fond de carte et thèmes Home Assistant
+
+Depuis **0.1.1-beta.1**, trois rendus sont proposés dans l’éditeur visuel, rubrique **Fond de la carte** :
+
+- **Verre dépoli** (`glass`, par défaut) : fond partiellement transparent, adapté aux couleurs principales du thème Home Assistant avec un léger flou.
+- **Thème Home Assistant** (`theme`) : respecte le fond de carte du thème (`--ha-card-background` ou `--card-background-color`), sans flou. Si le thème définit un fond sombre, il reste sombre.
+- **Transparent** (`transparent`) : aucun fond coloré ni flou ; le contenu prend visuellement place sur le fond du dashboard.
+
+Exemple YAML pour une carte Vent totalement transparente :
+
+```yaml
+type: custom:niak-weather-modular-card
+format: wind
+background_mode: transparent
+show_source: false
+```
+
+Sur une tablette peu puissante, le mode `theme` ou `transparent` est recommandé car il évite le filtre de flou. Les cartes existantes adoptent le verre dépoli si `background_mode` n'a pas été défini.
+
 ## Options générales
 
 | Option | Défaut | Description |
 |---|---|---|
 | `format` | `wind` | Une des 13 cartes |
+| `background_mode` | `glass` | Fond `glass` (verre dépoli), `theme` (thème HA) ou `transparent` |
 | `entry_id` | automatique si un seul lieu | Sélection du lieu dans Niak Weather |
 | `show_title` | `true` | Afficher le titre des cartes / blocs |
 | `show_source` | `true` | Afficher le badge « Station locale », etc. |

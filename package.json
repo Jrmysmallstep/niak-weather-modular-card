@@ -1,6 +1,6 @@
 {
   "name": "niak-weather-modular-card",
-  "version": "0.1.0-beta.1",
+  "version": "0.1.1-beta.1",
   "private": true,
   "description": "Independent Niak Weather cards for Home Assistant, HACS dashboard plugin",
   "license": "MIT",
