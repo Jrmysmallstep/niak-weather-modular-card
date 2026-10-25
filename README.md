@@ -128,7 +128,7 @@ moon_visual_mode: original
 
 ## Carte Lune indépendante — Lunar Phase
 
-Depuis **0.2.0-beta.1**, le format `moon` ajoute une carte inspirée de la disposition de [Lunar Phase Card](https://github.com/ngocjohn/lunar-phase-card), dans le style de Niak Weather Modular Cards (fonds `glass`, `theme`, `transparent`, grille responsive, thème HA). L'illustration de lune est générée localement en SVG ; aucun téléchargement d'image et aucun calcul astronomique supplémentaire.
+Depuis **0.2.0-beta.1**, le format `moon` ajoute une carte inspirée de la disposition de [Lunar Phase Card](https://github.com/ngocjohn/lunar-phase-card), dans le style de Niak Weather Modular Cards (fonds `glass`, `theme`, `transparent`, grille responsive, thème HA). Par défaut, le visuel utilise les photographies de la carte Lunar Phase originale (chargement en ligne) ; le mode `generated` dessine localement un SVG. Aucun calcul astronomique supplémentaire n'est réalisé.
 
 **Pré-requis pour ce format uniquement :** installer l'intégration [Lunar Phase de ngocjohn](https://github.com/ngocjohn/lunar-phase) dans Home Assistant. Le module sélectionne automatiquement son capteur « Phase de la lune » à partir de ses attributs, ou accepte `moon_entity` explicite. La carte Lune ne nécessite **pas** l'intégration Niak Weather et n'utilise **pas** son WebSocket.
 

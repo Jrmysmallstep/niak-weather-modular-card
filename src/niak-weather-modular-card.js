@@ -142,7 +142,7 @@
 }
 
   function overview(v,c){
-    const n=v.now||{},day=(v.days||[]).find(x=>x.today)||(v.days||[])[0]||{},
+    const n=v.now||{},day=(v.days||[]).find(x=>x.today)||{},
       valid=x=>x!==undefined&&x!==null&&Number.isFinite(Number(x)),
       minmax=opt(c,'show_temp_range')&&(valid(day.low)||valid(day.high))?'<div class="ov-range">'+
         (valid(day.low)?'<span>↓ '+num(day.low,0)+'°</span>':'')+(valid(day.high)?'<span>↑ '+num(day.high,0)+'°</span>':'')+'</div>':'',
