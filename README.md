@@ -2,7 +2,7 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.1.2-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.1.3-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Cette carte **ne remplace pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
@@ -93,6 +93,22 @@ entry_id: "identifiant_de_l_entree_niak"
 ```
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
+
+## Carte Ressenti indépendante
+
+Depuis **0.1.3-beta.1**, le format `comfort` reprend l'affichage de Niak Weather : valeur de ressenti, libellé, facteurs, bouton d'information et **jauge colorée de −5 °C à 45 °C** avec les deux repères du thermomètre (lorsque disponible) et du ressenti.
+
+```yaml
+type: custom:niak-weather-modular-card
+format: comfort
+background_mode: glass
+show_title: true
+show_source: true
+show_chart: true
+show_details: true
+```
+
+La jauge suit `show_chart`, le bouton d'explication suit `show_details`. Les autres réglages restent indépendants. L'intégration officielle fournit directement les valeurs de température mesurée et de ressenti.
 
 ## Affichage et défilement de la carte Événements
 

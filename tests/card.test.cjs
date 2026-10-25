@@ -26,7 +26,7 @@ const view={
  season:{info:{season:'autumn',icon:'mdi:leaf'},news:'Automne'},
  alerts:[],points:[{label:'Pluie',text:'Pluie dans 2 h',icon:'mdi:weather-rainy',clock:'17 h'}],
  bulletin:{summary:'Quelques nuages cet après-midi.',periods:[{label:'Ce soir',icon:'mdi:weather-night',text:'Temps sec'}]},
- comfort:{feels:17,word:'Frais',humidity:'62 %',source:'Station locale',gap:-1,factors:[{icon:'mdi:weather-windy',label:'Vent'}],example:'17 °C ressentis'},
+ comfort:{feels:17,temperature:18,word:'Frais',humidity:'62 %',source:'Station locale',gap:-1,factors:[{icon:'mdi:weather-windy',label:'Vent'}],example:'17 °C ressentis'},
  rain:{source:'Station locale',value:0,unit:'mm',label:'Aujourd’hui',days:[{label:'Lun',value:1},{label:'Mar',value:0.3}],stats:[{label:'Hier',value:'2 mm'}]},
  wind:{source:'Station locale',value:3,label:'Vent moyen',description:'Très légère brise',bearing:74,mean:series(2),gust:series(5),top:20,meanLabel:'Vent moyen',stats:[{label:'Rafales',value:'8 km/h'}]},
  pressure:{source:'Station locale',value:1018,description:'Stable',series:series(1014),low:1008,top:1025,stats:[{label:'Minimum',value:'1014 hPa'}]},
@@ -130,4 +130,36 @@ test('la frise reprend la charte CSS de Niak Weather',()=>{
   assert.match(script,/--nw-level3:/);
   assert.match(script,/--nw-radius-pill:/);
   assert.match(script,/label\('Événements'\)/);
+});
+
+
+test('ressenti individuel : jauge dégradée avec repères de température et valeur',()=>{
+  const c=new Card();c.setConfig({format:'comfort'});c._view={...view,station:true};c._render();
+  const out=c.shadowRoot.innerHTML;
+  assert.match(out,/comfort-rail-line/);
+  assert.match(out,/comfort-thermo" style="left:46%"/);
+  assert.match(out,/comfort-feel" style="left:44%"/);
+  assert.match(out,/−5°/);
+  assert.match(out,/45°/);
+  assert.match(out,/−1 °C par rapport au thermomètre/);
+  assert.match(out,/Explication du ressenti/);
+});
+
+test('ressenti individuel : graphiques détails titre et source masquables',()=>{
+  const c=new Card();c.setConfig({format:'comfort',show_title:false,show_source:false,show_chart:false,show_details:false});
+  c._view={...view,station:true};c._render();
+  const out=c.shadowRoot.innerHTML;
+  const main=out.slice(out.indexOf('<ha-card'));
+  assert.doesNotMatch(main,/comfort-rail-line/);
+  assert.doesNotMatch(main,/Station locale/);
+  assert.doesNotMatch(main,/<strong>Ressenti<\/strong>/);
+  assert.doesNotMatch(main,/comfort-help/);
+  assert.match(main,/km\/h|17/);
+});
+
+test('ressenti individuel : le repère thermomètre est optionnel',()=>{
+  const c=new Card();c.setConfig({format:'comfort'});c._view={...view,comfort:{...view.comfort,temperature:undefined}};c._render();
+  const main=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(main,/class="comfort-feel"/);
+  assert.doesNotMatch(main,/class="comfort-thermo"/);
 });
