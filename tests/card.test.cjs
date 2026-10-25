@@ -491,7 +491,7 @@ test('Carte complète : transmet réellement les options à Niak officiel et ajo
   };
   const wrapper={
     querySelector(id){if(id==='niak-weather-card')return native;if(id==='.full-native-moon')return moon;return null;},
-    appendChild(child){moon=child;},
+    appendChild(child){moon=child;moon.remove=()=>{moon=null;};},
     classList:{toggle(name,value){if(name==='moon-before')before=value;}}
   };
   try{
