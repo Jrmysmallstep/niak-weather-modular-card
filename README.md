@@ -23,7 +23,7 @@ Les formats météo **ne remplacent pas l'intégration [Niak Weather](https://gi
 | `hours` | Prévisions des 18 prochaines heures |
 | `days` | Prévisions des 7 prochains jours |
 | `pollen-forecast` | Prévisions de pollens pour demain |
-| `air` | Qualité de l'air (bonus) |
+| `air` | Air extérieur complet, indice et polluants personnalisables |
 | `moon` | Lune — phase, illumination, lever/coucher, âge, distance et prochaines phases |
 
 Chaque carte est disponible dans le sélecteur **Ajouter une carte** sous le nom **Niak Modular · …**. Toutes utilisent le composant `custom:niak-weather-modular-card` et un paramètre `format`.
@@ -94,6 +94,35 @@ entry_id: "identifiant_de_l_entree_niak"
 ```
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
+
+## Carte Air extérieur complète — 0.2.4-beta.1
+
+La carte `format: air` reprend l'indice de qualité de l'air de Niak Weather avec une jauge segmentée colorée (échelle ATMO), le polluant le plus défavorable, la liste des polluants et leurs concentrations lorsqu'elles existent. Les données anciennes et les indices spéciaux (code 7) sont distingués.
+
+```yaml
+type: custom:niak-weather-modular-card
+format: air
+background_mode: glass
+show_title: true
+show_date: true
+show_source: true
+air_period: today           # today, tomorrow ou both
+air_layout: auto            # auto, grid ou stack
+air_order: today-first      # today-first ou tomorrow-first
+air_gauge_position: left    # left ou right
+air_source_mode: provider   # provider ou custom
+# air_source_custom: "Ma source météo"
+air_source_position: header # header ou footer
+air_show_zone: true
+air_show_updated: true
+air_show_worse: true
+show_chart: true
+show_stats: true
+show_details: true
+air_details_open: false
+```
+
+Les réglages sont aussi accessibles dans l'éditeur de carte. `show_date` gère la date de la carte, `air_show_updated` la date de publication des données. Le fond peut être verre dépoli (`glass`), thème HA (`theme`) ou transparent (`transparent`). Les panneaux Aujourd'hui/Demain peuvent être ordonnés, présentés côte à côte ou superposés. Les prévisions de demain ne sont affichées **que si Niak Weather les fournit**.
 
 ## Refonte des cartes météo et visuel Lune — version 0.2.3-beta.1
 

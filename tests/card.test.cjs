@@ -378,3 +378,63 @@ test('Synthèse : éditeur propose les deux dispositions indépendamment de gauc
   assert.match(script,/\.ov-grid\.layout-classic\{display:flex;flex-direction:column/);
   assert.match(script,/\.ov-grid\.layout-classic \.ov-copy\{width:100%;grid-column:auto;grid-row:auto/);
 });
+
+
+test('Air extérieur : jauge ATMO, polluants complets et publication',()=>{
+  const item={kind:'air',tomorrow:false,scale:6,source:'Atmo France',zone:'Isère',updated:'25 octobre',
+    primary:{entityId:'sensor.atmo',value:3,label:'Moyen'},
+    worse:{label:'PM2,5',reading:{value:4,label:'Dégradé',entityId:'sensor.pm25'}},
+    details:[{label:'NO₂',reading:{entityId:'sensor.no2',value:2,label:'Faible'},
+      concentration:{value:12.5,unit:'µg/m³'}}]};
+  const card=new Card();card.setConfig({format:'air',air_details_open:true});
+  card._view={...view,air:{today:[item],tomorrow:[]}};card._render();
+  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/atmo-gauge/);assert.match(html,/Niveau 3 sur 6/);assert.match(html,/12,5 µg\/m³/);
+  assert.match(html,/NO₂/);assert.match(html,/PM2,5/);assert.match(html,/25 octobre/);
+  assert.match(html,/details class="atmo-details" open/);
+});
+
+test('Air extérieur : panneaux Aujourd’hui et Demain, ordre et position configurables',()=>{
+  const today={kind:'air',tomorrow:false,scale:6,primary:{value:3,label:'Moyen'},details:[]};
+  const tomorrow={kind:'air',tomorrow:true,scale:6,primary:{value:2,label:'Bon'},details:[]};
+  const card=new Card();card.setConfig({format:'air',air_period:'both',air_order:'tomorrow-first',
+    air_layout:'grid',air_gauge_position:'right',air_source_position:'footer'});
+  card._view={...view,air:{today:[today],tomorrow:[tomorrow]}};card._render();
+  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/atmo-layout-grid/);assert.match(html,/gauge-right/);
+  assert.ok(html.indexOf('Indice de demain')<html.indexOf('Indice du jour'));
+  assert.equal((html.match(/class="atmo-panel"/g)||[]).length,2);
+  assert.match(html,/atmo-foot/);
+});
+
+test('Air extérieur : masquer titre/date/source/jauge/détails et gérer indice hors échelle',()=>{
+  const card=new Card();card.setConfig({format:'air',show_date:false,show_title:false,show_source:false,
+    show_chart:false,show_details:false,air_show_zone:false,air_show_updated:false});
+  card._view={...view,air:{today:[{kind:'air',source:'Atmo France',zone:'Isère',
+    primary:{value:7,label:'Événement signalé'},details:[]}]}};card._render();
+  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/Code 7 · hors échelle/);
+  assert.doesNotMatch(html,/atmo-gauge|Atmo France|dimanche 25 octobre|Isère/);
+});
+
+test('Air extérieur : mode source personnalisée et texte échappé',()=>{
+  const card=new Card();card.setConfig({format:'air',air_source_mode:'custom',
+    air_source_custom:'<img src=x onerror=alert(1)>',air_source_position:'footer'});
+  card._view=view;card._render();
+  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/&lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.doesNotMatch(html,/<img src=x/);
+  assert.match(html,/atmo-foot/);
+});
+
+test('Air extérieur : éditeur visuel expose les sélections et options du format',()=>{
+  const editor=Card.getConfigElement();editor.setConfig({format:'air',air_layout:'stack',
+    air_period:'both',air_source_mode:'custom',air_details_open:true});
+  const html=editor.shadowRoot.innerHTML;
+  for(const key of ['air_period','air_layout','air_order','air_gauge_position','air_source_mode','air_source_custom',
+    'air_source_position','air_show_zone','air_show_updated','air_show_worse','air_details_open'])
+      assert.ok(html.includes('name="'+key+'"'),key);
+  assert.match(html,/value="stack" selected/);
+  assert.match(html,/value="both" selected/);
+  assert.match(html,/value="custom" selected/);
+});
