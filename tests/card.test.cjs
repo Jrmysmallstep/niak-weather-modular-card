@@ -451,13 +451,13 @@ test('Carte complète : éditeur expose l’ordre des blocs, fond, sources, date
   const editor=Card.getConfigElement();
   editor.setConfig({format:'full',full_show_moon:true,full_moon_position:'before'});
   const html=editor.shadowRoot.innerHTML;
-  for(const key of ['full_show_banner','full_show_moon','full_moon_position','temperature_position',
+  for(const key of ['full_show_banner','full_show_moon','full_modules_position','temperature_position',
     'full_source_position','banner_blocks','today_blocks','forecast_blocks','show_date','show_source','background_mode',
     'moon_visual_mode','moon_entity']){
     assert.ok(html.includes(key),key);
   }
   assert.match(html,/Carte complète Niak Weather/);
-  assert.match(html,/Avant la carte météo/);
+  assert.match(html,/Au-dessus de la météo complète/);
 });
 
 test('Carte complète : changement de rang dans l’éditeur enregistré',()=>{
@@ -474,56 +474,76 @@ test('Carte complète : ne crée pas de seconde souscription météo',()=>{
   card.hass={connection:{subscribeMessage(){called++;return Promise.resolve(()=>{});}}};
   assert.equal(called,0);
   assert.match(script,/fullOriginalConfig\(c\)/);
-  assert.match(script,/if\(c\.full_show_moon===true\)/);
+  assert.match(script,/orderedFullModules\(c\)/);
   assert.match(script,/fullOriginalCSS\(c\)/);
 });
 
 
-test('Carte complète : transmet réellement les options à Niak officiel et ajoute la Lune',()=>{
+test('Carte complète : réutilise Niak officiel et affiche Lune, Soleil et Radars dans la même grille',()=>{
   const existing=registered.get('niak-weather-card');
   registered.set('niak-weather-card',class {});
-  const oldCreate=ctx.document.createElement;
-  let stylesheet=null, moon=null, seen=null, before=null, updates=0;
-  const native={
-    shadowRoot:{querySelector(id){return id==='#niak-full-custom-style'?stylesheet:null;},
-      appendChild(style){stylesheet=style;}},
-    setConfig(config){seen=config;updates++;}
-  };
-  const wrapper={
-    querySelector(id){if(id==='niak-weather-card')return native;if(id==='.full-native-moon')return moon;return null;},
-    appendChild(child){moon=child;moon.remove=()=>{moon=null;};},
-    classList:{toggle(name,value){if(name==='moon-before')before=value;}}
+  const originalCreate=ctx.document.createElement;
+  let style=null, seen=null, updates=0, grid=null;
+  const native={shadowRoot:{querySelector(s){return s==='#niak-full-custom-style'?style:null;},
+    appendChild(s){style=s;}},setConfig(c){seen=c;updates++;}};
+  const wrapper={querySelector(sel){
+    if(sel==='niak-weather-card')return native;
+    if(sel==='.full-addon-grid')return grid;
+    return null;
+  },appendChild(child){grid=child;child.parentElement=this;}};
+  ctx.document.createElement=tag=>{
+    if(tag==='style')return {textContent:'',id:''};
+    if(tag==='div'){
+      const children=new Map(),classes=new Set();
+      const g={className:'full-addon-grid',classList:{toggle(k,v){v?classes.add(k):classes.delete(k);},contains(k){return classes.has(k);}},
+        querySelector(s){return children.get(s)||null;},
+        appendChild(c){children.set('.'+c.className,c);c.parentElement=this;c.remove=()=>children.delete('.'+c.className);},
+        remove(){grid=null;},_children:children};
+      return g;
+    }
+    return originalCreate(tag);
   };
   try{
-    ctx.document.createElement=function(tag){return tag==='style'?{textContent:'',id:''}:oldCreate(tag);};
-    const c=new Card();
-    c.setConfig({format:'full',temperature_position:'left',show_date:false,show_source:false,
-      background_mode:'transparent',full_show_moon:true,full_moon_position:'before',
+    const card=new Card();
+    card.setConfig({format:'full',temperature_position:'left',show_date:false,show_source:false,
+      background_mode:'transparent',full_show_sun:true,full_show_moon:true,full_show_radars:true,
+      full_modules_position:'before',full_modules_order:['moon','sun','radars'],
+      radar_url_current:'',radar_url_forecast:'',
       today_blocks:['pressure','wind'],forecast_blocks:['days'],banner_blocks:['events']});
-    c.shadowRoot.querySelector=id=>id==='.full-native-wrapper'?wrapper:null;
+    card.shadowRoot.querySelector=s=>s==='.full-native-wrapper'?wrapper:null;
     const hass={states:{'sensor.lunar_phase':{state:'full_moon',attributes:{moon_age:14.7,illumination_fraction:100}}},connection:{}};
-    c.hass=hass;
+    card.hass=hass;
     assert.equal(seen.type,'custom:niak-weather-card');
     assert.equal(seen.format,'full');
     assert.equal(seen.today_blocks.join(','),'pressure,wind');
     assert.equal(seen.forecast_blocks.join(','),'days');
     assert.equal(seen.banner_blocks.join(','),'events');
-    assert.equal(updates,1,'ne reconfigure pas une carte Lit à chaque mise à jour');
-    assert.equal(before,true);
+    assert.equal(updates,1,'ne reconfigure pas inutilement Niak officiel');
+    assert.ok(grid?.classList.contains('addons-before'));
+    assert.equal(grid._children.size,3);
+    const moon=grid.querySelector('.full-native-moon'),sun=grid.querySelector('.full-native-sun'),
+      radars=grid.querySelector('.full-native-radars');
+    assert.equal(moon.style.order,0);
+    assert.equal(sun.style.order,1);
+    assert.equal(radars.style.order,2);
     assert.equal(moon._config.format,'moon');
+    assert.equal(sun._config.format,'sun-home');
+    assert.equal(radars._config.format,'radars');
+    assert.equal(radars._config.radar_layout,'tabs','Onglets lisibles dans un tiers de largeur');
     assert.equal(moon.hass,hass);
-    assert.match(stylesheet.textContent,/nw-now/);
-    assert.match(stylesheet.textContent,/transparent/);
-    assert.match(stylesheet.textContent,/display:none/);
-    c.setConfig({...c._config,full_show_moon:false});
-    assert.equal(seen.format,'full');
-    assert.equal(before,false);
+    assert.match(style.textContent,/nw-now/);
+    assert.match(style.textContent,/transparent/);
+    card.setConfig({...card._config,full_modules_position:'after',
+      full_modules_order:['radars','moon','sun'],full_show_moon:false});
+    assert.ok(!grid.classList.contains('addons-before'));
+    assert.equal(grid._children.size,2);
+    assert.equal(grid.querySelector('.full-native-radars').style.order,0);
+    assert.equal(grid.querySelector('.full-native-sun').style.order,2);
   }finally{
-    ctx.document.createElement=oldCreate;
+    ctx.document.createElement=originalCreate;
     if(existing)registered.set('niak-weather-card',existing);else registered.delete('niak-weather-card');
   }
 });
-
 
 test('Soleil : capteurs réels, durée en minutes, date explicite des prochains événements',()=>{
   const card=new Card();card.setConfig({format:'sun-home',show_source:true,sun_show_diagram:false});
@@ -586,17 +606,27 @@ test('Éditeur : Soleil et Radars configurables, sans URL préremplie',()=>{
     assert.match(radar.shadowRoot.innerHTML,new RegExp('name="'+id+'"'));
   assert.doesNotMatch(radar.shadowRoot.innerHTML,/value="https:\/\/www\.meteo-grenoble/);
 });
-test('Carte complète : activations du Soleil et des Radars visibles dans l’éditeur',()=>{
+test('Carte complète : grille des trois modules et ordre personnalisable dans l’éditeur',()=>{
   const editor=Card.getConfigElement();
-  editor.setConfig({format:'full',full_show_sun:true,full_show_radars:true,full_sun_position:'before'});
+  editor.setConfig({format:'full',full_show_sun:true,full_show_moon:true,
+    full_show_radars:true,full_modules_order:['sun','moon','radars']});
   const html=editor.shadowRoot.innerHTML;
-  for(const id of ['full_show_sun','full_show_radars','full_sun_position','full_radars_position',
-    'full_sun_order','full_radars_order','radar_url_current','radar_url_forecast','sun_diagram_entity'])
+  for(const id of ['full_show_sun','full_show_radars','full_show_moon','full_modules_position',
+    'radar_url_current','radar_url_forecast','sun_diagram_entity'])
     assert.match(html,new RegExp('name="'+id+'"'));
-  assert.match(html,/Avant la météo/);
+  for(const i of [0,1,2])assert.match(html,new RegExp('data-module-order="'+i+'"'));
+  assert.match(html,/Au-dessus de la météo complète/);
+  editor._change({target:{dataset:{moduleOrder:'0'},value:'radars'}});
+  assert.equal(editor._config.full_modules_order.join(','),'radars,moon,sun');
+  editor._change({target:{dataset:{moduleOrder:'1'},value:'sun'}});
+  assert.equal(editor._config.full_modules_order.join(','),'radars,sun,moon');
 });
-
-
+test('Grille des modules : 3 cartes maximum sur PC, deux sur tablette, une sur mobile',()=>{
+  assert.match(script,/\.full-native-wrapper>\.full-addon-grid\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(script,/\.full-native-wrapper>\.full-addon-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(script,/\.full-native-wrapper>\.full-addon-grid\{\s*display:grid;grid-template-columns:minmax\(0,1fr\)/);
+  assert.doesNotMatch(script,/this\._syncFullSun\(native,wrapper\)/);
+});
 test('Soleil compact : indicateurs réduits, Solar Mask conservé',()=>{
   const existing=registered.get('solar-mask-card');registered.set('solar-mask-card',class {});
   try{
@@ -630,26 +660,20 @@ test('Carte complète : Air et Pollens partagent une seule colonne de météo',(
   assert.match(html,/name="full_compact_air"/);
   assert.match(html,/Air extérieur \+ Pollens : largeur d’une carte/);
 });
-test('Carte complète : Soleil et Air/Pollens partagent la grille native Aujourd’hui',()=>{
-  const c=new Card();c.setConfig({format:'full',full_show_sun:true,full_sun_position:'today'});
-  const flags={set:new Set(),add(x){this.set.add(x)},remove(x){this.set.delete(x)}};
-  const body={classList:flags,appendChild(x){x.parentElement=this;}};
-  const wrap={appendChild(x){x.parentElement=this;}};
-  const sun={parentElement:wrap,style:{},classList:{add(){},remove(){}},remove(){this.parentElement=null;}};
-  const native={shadowRoot:{
-    querySelector(s){return s.includes('fm-body')?body:null;},
-    querySelectorAll(){return [body];}
-  }};
-  c._fullSunElement=sun;c._syncFullSun(native,wrap);
-  assert.equal(sun.parentElement,body);assert.ok(flags.set.has('niak-sun-air-row'));
-  c._config.full_sun_position='after';c._syncFullSun(native,wrap);
-  assert.equal(sun.parentElement,wrap);assert.ok(!flags.set.has('niak-sun-air-row'));
-  assert.match(script,/niak-sun-air-row\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
+test('Aujourd’hui : Ressenti et Air/Pollens partagent deux colonnes sur PC et tablette',()=>{
+  assert.match(script,/\.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)>\.nw-panel\{grid-column:1;order:0/);
+  assert.match(script,/\.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)>\.panels-two\{grid-column:1;order:1;width:100%!important/);
+  assert.match(script,/@container \(min-width:560px\)\{\.fm-section\[aria-labelledby\$="-today"\] \.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)\{grid-template-columns:repeat\(2/);
+  assert.match(script,/@container \(min-width:860px\)\{\.fm-section\[aria-labelledby\$="-today"\] \.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)\{grid-template-columns:repeat\(3/);
+  assert.match(script,/\.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)>\.grid3\{grid-column:1\/-1;order:2/);
+  const e=Card.getConfigElement();e.setConfig({format:'full'});
+  assert.match(e.shadowRoot.innerHTML,/name="full_air_position"/);
+  assert.match(e.shadowRoot.innerHTML,/À côté de Ressenti/);
 });
 test('Soleil : éditeur propose taille compacte et graphique Solar Mask',()=>{
   const e=Card.getConfigElement();e.setConfig({format:'full',full_show_sun:true});
   const html=e.shadowRoot.innerHTML;
-  assert.match(html,/Dans Aujourd’hui \(3 max par ligne\)/);
+  assert.match(html,/Position de la ligne Soleil \/ Lune \/ Radars/);
   assert.match(html,/name="sun_compact"/);
   assert.match(html,/Afficher la carte Solar Mask/);
   assert.match(html,/Hauteur du diagramme/);
@@ -659,7 +683,7 @@ test('Soleil : éditeur propose taille compacte et graphique Solar Mask',()=>{
 test('Air et Pollens : CSS compact appliqué à Aujourd’hui et aux Prévisions',()=>{
   assert.match(script,/\.fm-section \.fm-body>\.panels-two\{box-sizing:border-box/);
   assert.doesNotMatch(script,/\.fm-section\[aria-labelledby\$="-today"\] \.fm-body \.panels-two\{box-sizing:border-box/);
-  assert.match(script,/\.fm-body\.niak-sun-air-row>\.panels-two\{grid-column:1;order:2;width:100%!important/);
+  assert.match(script,/\.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)>\.panels-two\{grid-column:1;order:1;width:100%!important/);
   assert.match(script,/\.fm-section \.panels-two>\.nw-panel\{border:0!important;box-shadow:none!important;background:transparent!important/);
 });
 test('Solar Mask : suppression de bordure indépendante du mode compact',()=>{
@@ -686,4 +710,23 @@ test('Éditeur : options de bordures séparées pour Soleil et Air/Pollens',()=>
   assert.match(e.shadowRoot.innerHTML,/name="sun_mask_border"/);
   assert.match(e.shadowRoot.innerHTML,/name="full_air_border"/);
   assert.match(e.shadowRoot.innerHTML,/aujourd’hui et demain/);
+});
+
+
+test('Air/Pollens : désactiver le placement à côté de Ressenti reste disponible',()=>{
+  const e=Card.getConfigElement();e.setConfig({format:'full',full_air_position:'after_measures'});
+  assert.match(e.shadowRoot.innerHTML,/value="after_measures" selected/);
+  assert.match(e.shadowRoot.innerHTML,/Après Pluie \/ Vent \/ Pression/);
+  assert.match(script,/c\.full_air_position!=='after_measures'/);
+});
+test('Ordre des trois modules : migration des anciennes positions numériques',()=>{
+  const e=Card.getConfigElement();
+  e.setConfig({format:'full',full_sun_order:'3',full_moon_order:'1',full_radars_order:'2',
+    full_show_sun:true,full_show_moon:true,full_show_radars:true});
+  const html=e.shadowRoot.innerHTML;
+  assert.match(html,/data-module-order="0"/);
+  assert.match(html,/data-module-order="1"/);
+  assert.match(html,/data-module-order="2"/);
+  const q=html.indexOf('data-module-order="0"'),option=html.slice(q,q+330);
+  assert.match(option,/value="moon" selected/);
 });

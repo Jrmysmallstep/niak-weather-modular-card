@@ -2,7 +2,7 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.2.8-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.2.9-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Les formats météo **ne remplacent pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
@@ -98,7 +98,33 @@ entry_id: "identifiant_de_l_entree_niak"
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
 
-### Grille commune et bordures facultatives — 0.2.8-beta.1
+### Grilles indépendantes et ordre configurable — 0.2.9-beta.1
+
+Dans la carte Niak Weather complète, **Solar Mask / Soleil, Lune et Radars** sont maintenant trois cartes de taille comparable dans **une grille dédiée**, indépendante des blocs internes de la carte officielle. Sur un grand écran (860 px et plus) : 3 colonnes au maximum ; sur tablette (560 à 859 px) : 2 ; sur téléphone : 1. Le sélecteur d'ordre de l'éditeur **échange automatiquement** les cartes sans doublons et le groupe se place avant ou après Niak Weather.
+
+Dans la section **Aujourd'hui**, le panneau **Ressenti** et le duo **Air extérieur/Pollens** peuvent être positionnés **côte à côte**, sans déplacer les éléments gérés par Lit : ils partagent une grille CSS sur PC et tablette, puis s'empilent sur téléphone. Les cartes Pluie/Vent/Pression restent regroupées sur la ligne suivante. Les données du lendemain restent en mode compact sans changement.
+
+```yaml
+type: custom:niak-weather-modular-card
+format: full
+full_air_position: with_comfort  # with_comfort / after_measures
+full_compact_air: true
+full_show_sun: true
+full_show_moon: true
+full_show_radars: true
+full_modules_position: after    # before / after
+full_modules_order:
+  - sun
+  - moon
+  - radars
+radar_layout: tabs             # recommandé sur 3 colonnes
+radar_url_current: ""
+radar_url_forecast: ""
+```
+
+Les anciennes options `full_sun_order`, `full_moon_order` et `full_radars_order` sont interprétées si `full_modules_order` n'existe pas. Les anciennes positions individuelles de Soleil/Lune/Radars sont remplacées par le réglage commun de la grille. Aucun URL radar n'est défini automatiquement.
+
+### Grille commune et bordures facultatives — 0.2.9-beta.1
 
 Dans la section **Aujourd’hui** de la carte complète, `full_sun_position: today` place désormais **Soleil et le duo Air extérieur/Pollens dans une même grille**, côte à côte lorsque la largeur le permet, avec **3 emplacements maximum par ligne** (2 sur tablette et 1 sur mobile). Les blocs de pluie/vent/pression restent sur la rangée précédente. Les panneaux Niak d’origine ne sont pas déplacés : seule la carte Soleil est insérée dans la grille, pour respecter la structure Lit.
 
@@ -117,7 +143,7 @@ full_air_border: false
 full_show_atmo_tomorrow: true
 ```
 
-### Présentation compacte Soleil + Air / Pollens — 0.2.8-beta.1
+### Présentation compacte Soleil + Air / Pollens — 0.2.9-beta.1
 
 La carte **Soleil & Ensoleillement** adopte par défaut un rendu compact de type Pluie / Vent / Pression : petits indicateurs, horaires raccourcis et **graphique Solar Mask conservé** à 220 px de hauteur. En YAML, `sun_compact: false` restaure les grandes dimensions et `sun_diagram_height` règle la hauteur (plafond compact 260 px).
 
@@ -136,7 +162,7 @@ sun_diagram_height: 220
 full_compact_air: true
 ```
 
-## Soleil & Ensoleillement et Radars — 0.2.8-beta.1
+## Soleil & Ensoleillement et Radars — 0.2.9-beta.1
 
 Ces deux cartes existent **indépendamment** et peuvent être activées comme sections facultatives dans la carte complète `format: full`. Niak Weather continue de produire seul le bulletin du jour, exclusivement à partir des prévisions de son fournisseur.
 
@@ -191,7 +217,7 @@ radar_url_forecast: ""
 
 Les modules supplémentaires sont **désactivés par défaut** afin de préserver les tableaux de bord existants. Leur emplacement et leur ordre peuvent être modifiés dans l'éditeur visuel.
 
-## Carte complète officielle avec options supplémentaires — 0.2.8-beta.1
+## Carte complète officielle avec options supplémentaires — 0.2.9-beta.1
 
 Le format `full` **embarque directement la carte originale Niak Weather** (`custom:niak-weather-card`) pour conserver son rendu, ses animations, la frise automatique, ses graphiques et ses sections repliables. L'intégration Niak Weather et sa ressource frontend doivent être chargées. Nos réglages n'altèrent pas le dépôt original.
 
@@ -225,7 +251,7 @@ La carte permet de déplacer et masquer les éléments des trois listes dans son
 
 Les styles additionnels reposent sur les classes CSS de la version actuelle de Niak Weather. Si la carte officielle change de structure dans une mise à jour future, certaines options visuelles pourront demander une adaptation, sans affecter ses données.
 
-## Carte Air extérieur complète — 0.2.8-beta.1
+## Carte Air extérieur complète — 0.2.9-beta.1
 
 La carte `format: air` reprend l'indice de qualité de l'air de Niak Weather avec une jauge segmentée colorée (échelle ATMO), le polluant le plus défavorable, la liste des polluants et leurs concentrations lorsqu'elles existent. Les données anciennes et les indices spéciaux (code 7) sont distingués.
 
