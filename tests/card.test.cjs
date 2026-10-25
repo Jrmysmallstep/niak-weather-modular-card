@@ -595,3 +595,60 @@ test('Carte complète : activations du Soleil et des Radars visibles dans l’é
     assert.match(html,new RegExp('name="'+id+'"'));
   assert.match(html,/Avant la météo/);
 });
+
+
+test('Soleil compact : indicateurs réduits, Solar Mask conservé',()=>{
+  const existing=registered.get('solar-mask-card');registered.set('solar-mask-card',class {});
+  try{
+    const c=new Card();c.setConfig({format:'sun-home',sun_diagram_entity:'sensor.terrasse_solar_diagram'});
+    c.hass={states:{'sensor.terrasse_solar_diagram':{state:'available',attributes:{}},
+      'sensor.difference_de_soleil':{state:'-3',attributes:{}},
+      'sensor.sunterrasse_sun_duration':{state:'390',attributes:{}},
+      'sun.sun':{state:'above_horizon',attributes:{}}}};
+    const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+    assert.match(html,/sun-home sun-compact/);
+    assert.match(html,/−3 min/);assert.match(html,/6h30/);
+    assert.match(html,/<solar-mask-card><\/solar-mask-card>/);
+    assert.equal(c.getGridOptions().columns,4);
+    assert.match(script,/\.sun-compact \.sun-metric b\{font-size:18px/);
+    assert.match(script,/c\.sun_compact===false\?620:260/);
+  }finally{if(existing)registered.set('solar-mask-card',existing);else registered.delete('solar-mask-card');}
+});
+test('Soleil : mode détaillé facultatif conserve la taille du graphique',()=>{
+  const c=new Card();c.setConfig({format:'sun-home',sun_compact:false});
+  c.hass={states:{'sun.sun':{state:'above_horizon',attributes:{}}}};
+  const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/class="inner sun-home"/);
+  assert.doesNotMatch(html,/sun-home sun-compact/);
+});
+test('Carte complète : Air et Pollens partagent une seule colonne de météo',()=>{
+  assert.match(script,/\.panels-two\{box-sizing:border-box;width:calc\(\(100% - 32px\)\/3\)/);
+  assert.match(script,/\.panels-two\{grid-template-columns:minmax\(0,1fr\)!important/);
+  assert.match(script,/\.panels-two \.aq \.disc\{width:52px!important/);
+  const e=Card.getConfigElement();e.setConfig({format:'full',full_show_sun:true});
+  const html=e.shadowRoot.innerHTML;
+  assert.match(html,/name="full_compact_air"/);
+  assert.match(html,/Air extérieur \+ Pollens : largeur d’une carte/);
+});
+test('Carte complète : Soleil dans Aujourd’hui, grille de trois maximum',()=>{
+  const c=new Card();c.setConfig({format:'full',full_show_sun:true,full_sun_position:'today'});
+  const classList={values:new Set(),add(x){this.values.add(x);},remove(x){this.values.delete(x);}};
+  const sun={parentElement:null,style:{},classList:{add(x){this.value=x;},remove(x){this.value='';}}};
+  const wrap={appendChild(x){x.parentElement=this;}};
+  const grid={appendChild(x){x.parentElement=this;},classList};
+  const native={shadowRoot:{querySelector(x){return x.includes('grid3')?grid:null;},querySelectorAll(){return [grid];}}};
+  c._fullSunElement=sun;c._syncFullSun(native,wrap);
+  assert.equal(sun.parentElement,grid);assert.ok(classList.values.has('niak-with-sun'));
+  c._config.full_sun_position='after';c._syncFullSun(native,wrap);
+  assert.equal(sun.parentElement,wrap);
+  assert.ok(!classList.values.has('niak-with-sun'));
+  assert.match(script,/grid3\.niak-with-sun\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
+});
+test('Soleil : éditeur propose taille compacte et graphique Solar Mask',()=>{
+  const e=Card.getConfigElement();e.setConfig({format:'full',full_show_sun:true});
+  const html=e.shadowRoot.innerHTML;
+  assert.match(html,/Dans Aujourd’hui \(3 max par ligne\)/);
+  assert.match(html,/name="sun_compact"/);
+  assert.match(html,/Afficher la carte Solar Mask/);
+  assert.match(html,/Hauteur du diagramme/);
+});
