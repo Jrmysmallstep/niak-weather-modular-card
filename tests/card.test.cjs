@@ -36,7 +36,7 @@ const view={
 };
 
 test('les 13 formats sont déclarés dans le sélecteur Home Assistant',()=>{
-  assert.equal(ctx.window.customCards.length,14);
+  assert.equal(ctx.window.customCards.length,15);
   for(const {type} of ctx.window.customCards) assert.ok(registered.get(type));
 });
 
@@ -437,4 +437,43 @@ test('Air extérieur : éditeur visuel expose les sélections et options du form
   assert.match(html,/value="stack" selected/);
   assert.match(html,/value="both" selected/);
   assert.match(html,/value="custom" selected/);
+});
+
+
+test('Carte complète : format officiel disponible, attend le composant Niak Weather',()=>{
+  const card=new Card();card.setConfig({format:'full',full_show_moon:true});
+  assert.match(card.shadowRoot.innerHTML,/Niak Weather officiel est introuvable/);
+  assert.equal(card.getCardSize(),13);
+  assert.ok(ctx.window.customCards.some(x=>x.type==='niak-weather-modular-full-card'));
+});
+
+test('Carte complète : éditeur expose l’ordre des blocs, fond, sources, date et Lune',()=>{
+  const editor=Card.getConfigElement();
+  editor.setConfig({format:'full',full_show_moon:true,full_moon_position:'before'});
+  const html=editor.shadowRoot.innerHTML;
+  for(const key of ['full_show_banner','full_show_moon','full_moon_position','temperature_position',
+    'full_source_position','banner_blocks','today_blocks','forecast_blocks','show_date','show_source','background_mode',
+    'moon_visual_mode','moon_entity']){
+    assert.ok(html.includes(key),key);
+  }
+  assert.match(html,/Carte Niak Weather complète/);
+  assert.match(html,/Avant la carte météo/);
+});
+
+test('Carte complète : changement de rang dans l’éditeur enregistré',()=>{
+  const editor=Card.getConfigElement();editor.setConfig({format:'full'});
+  editor._change({target:{dataset:{fullGroup:'today_blocks',fullBlock:'pressure'},value:'1'}});
+  assert.equal(editor._config.today_blocks[0],'pressure');
+  editor._change({target:{dataset:{fullGroup:'today_blocks',fullBlock:'pressure'},value:'off'}});
+  assert.ok(!editor._config.today_blocks.includes('pressure'));
+});
+
+test('Carte complète : ne crée pas de seconde souscription météo',()=>{
+  let called=0;
+  const card=new Card();card.setConfig({format:'full'});
+  card.hass={connection:{subscribeMessage(){called++;return Promise.resolve(()=>{});}}};
+  assert.equal(called,0);
+  assert.match(script,/fullOriginalConfig\(c\)/);
+  assert.match(script,/if\(c\.full_show_moon===true\)/);
+  assert.match(script,/fullOriginalCSS\(c\)/);
 });

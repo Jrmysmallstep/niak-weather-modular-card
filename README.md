@@ -2,15 +2,16 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.2.3-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.2.5-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Les formats météo **ne remplacent pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
 
-## 14 formats dans le sélecteur
+## 15 formats dans le sélecteur
 
 | Format YAML | Carte |
 |---|---|
+| `full` | Carte Niak Weather officielle complète, personnalisable, avec Lune facultative |
 | `overview` | Synthèse / En ce moment : météo, températures, bulletin et événements |
 | `bulletin` | Bulletin du jour |
 | `events` | Événements météo |
@@ -95,7 +96,41 @@ entry_id: "identifiant_de_l_entree_niak"
 
 L'identifiant est sélectionnable via l'éditeur visuel si plusieurs lieux sont configurés.
 
-## Carte Air extérieur complète — 0.2.4-beta.1
+## Carte complète officielle avec options supplémentaires — 0.2.5-beta.1
+
+Le format `full` **embarque directement la carte originale Niak Weather** (`custom:niak-weather-card`) pour conserver son rendu, ses animations, la frise automatique, ses graphiques et ses sections repliables. L'intégration Niak Weather et sa ressource frontend doivent être chargées. Nos réglages n'altèrent pas le dépôt original.
+
+```yaml
+type: custom:niak-weather-modular-card
+format: full
+background_mode: glass     # glass, theme, transparent
+show_title: true
+show_date: true
+show_source: true
+full_source_position: header # header, footer
+temperature_position: right # left, right
+full_clock: none            # none, left, right
+full_show_banner: true
+show_bulletin: true
+show_temp_range: true
+show_temp_trend: true
+show_animations: true
+collapse_today: false
+collapse_predictions: false
+banner_blocks: [bulletin, events]
+today_blocks: [comfort, rain, wind, pressure, extras, air]
+forecast_blocks: [hours, days, air]
+full_show_moon: false
+full_moon_position: after   # after, before
+# moon_visual_mode: original
+# moon_entity: sensor.votre_phase_lunaire
+```
+
+La carte permet de déplacer et masquer les éléments des trois listes dans son **éditeur visuel**. Les options de fond, de source, date et position de la température sont appliquées au rendu original. La Lune est une carte additionnelle, désactivée par défaut, placée avant ou après Niak Weather. Pour l'activer, il faut l'intégration [Lunar Phase](https://github.com/ngocjohn/lunar-phase). Les paramètres `moon_visual_mode`, `moon_image_url`, `moon_entity` et `moon_position` restent disponibles.
+
+Les styles additionnels reposent sur les classes CSS de la version actuelle de Niak Weather. Si la carte officielle change de structure dans une mise à jour future, certaines options visuelles pourront demander une adaptation, sans affecter ses données.
+
+## Carte Air extérieur complète — 0.2.5-beta.1
 
 La carte `format: air` reprend l'indice de qualité de l'air de Niak Weather avec une jauge segmentée colorée (échelle ATMO), le polluant le plus défavorable, la liste des polluants et leurs concentrations lorsqu'elles existent. Les données anciennes et les indices spéciaux (code 7) sont distingués.
 
