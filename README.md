@@ -2,7 +2,7 @@
 
 **Des cartes météo indépendantes pour les dashboards Home Assistant.**
 
-> **Version 0.2.9-beta.1 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
+> **Version 0.2.9-beta.2 — prototype fonctionnel, à tester avec une installation Home Assistant réelle.**
 > Ce dépôt n'est **pas** une version officielle de Niak Weather.
 
 Les formats météo **ne remplacent pas l'intégration [Niak Weather](https://github.com/Niakman13/niak-weather-integration)** : elle lit ses données par le WebSocket local `niak_weather/subscribe`. L'intégration Niak Weather officielle doit rester installée et configurée. Aucune modification du dossier `custom_components` n'est nécessaire.
@@ -161,6 +161,12 @@ sun_show_diagram: true
 sun_diagram_height: 220
 full_compact_air: true
 ```
+
+### Allègement Soleil et Radars — 0.2.9-beta.2
+
+- **Soleil** : suppression des deux fonds colorés des indicateurs d'évolution du jour et d'ensoleillement de la maison, suppression des sous-textes redondants et légère réduction typographique.
+- **Solar Mask** : suppression du titre interne « SunTerrasse solar diagram », fond opaque du graphique SVG désormais transparent. Le quadrillage, les axes, les trajectoires solaires et la légende restent présents. Par défaut en mode compact, le graphique passe de 220 à **240 px**, profitant de l'espace libéré par le titre sans agrandir sensiblement le bloc ; une hauteur personnalisée `sun_diagram_height` garde priorité.
+- **Radars** : suppression des sous-titres « Radar actuel » et « Prévisions de pluie » au-dessus des images. Ils restent dans les attributs `title` des iframes pour l'accessibilité ; les boutons du mode onglets restent inchangés.
 
 ## Soleil & Ensoleillement et Radars — 0.2.9-beta.1
 

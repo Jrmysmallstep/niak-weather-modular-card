@@ -642,7 +642,7 @@ test('Soleil compact : indicateurs réduits, Solar Mask conservé',()=>{
     assert.match(html,/−3 min/);assert.match(html,/6h30/);
     assert.match(html,/<solar-mask-card><\/solar-mask-card>/);
     assert.equal(c.getGridOptions().columns,4);
-    assert.match(script,/\.sun-compact \.sun-metric b\{font-size:18px/);
+    assert.match(script,/\.sun-compact \.sun-metric b\{font-size:17px/);
     assert.match(script,/c\.sun_compact===false\?620:260/);
   }finally{if(existing)registered.set('solar-mask-card',existing);else registered.delete('solar-mask-card');}
 });
@@ -731,4 +731,52 @@ test('Ordre des trois modules : migration des anciennes positions numériques',(
   assert.match(html,/data-module-order="2"/);
   const q=html.indexOf('data-module-order="0"'),option=html.slice(q,q+330);
   assert.match(option,/value="moon" selected/);
+});
+
+
+test('Soleil : indicateurs allégés sans fond coloré ni sous-texte',()=>{
+  const c=new Card();c.setConfig({format:'sun-home'});
+  c.hass={states:{
+    'sun.sun':{state:'above_horizon',attributes:{}},
+    'sensor.difference_de_soleil':{state:'-3',attributes:{}},
+    'sensor.sunterrasse_sun_duration':{state:'380',attributes:{}}
+  }};
+  const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/Évolution du jour/);assert.match(html,/Ensoleillement de la maison/);
+  assert.doesNotMatch(html,/Durée gagnée ou perdue|Durée de la zone mesurée/);
+  assert.match(script,/\.sun-metric\{[^}]*background:transparent/);
+  assert.match(script,/\.sun-compact \.sun-metric b\{font-size:17px/);
+});
+
+test('Radars : sous-titres redondants absents, iframes toujours accessibles',()=>{
+  const c=new Card();c.setConfig({format:'radars',radar_layout:'stack',
+    radar_url_current:'https://example.org/radar',
+    radar_url_forecast:'https://example.org/forecast'});
+  c.hass={states:{}};
+  const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.equal((html.match(/<iframe/g)||[]).length,2);
+  assert.doesNotMatch(html,/<strong>Radar actuel<\/strong>|<strong>Prévisions de pluie<\/strong>/);
+  assert.match(html,/title="Radar actuel"/);
+  assert.match(html,/title="Prévisions de pluie"/);
+});
+
+test('Solar Mask : titre masqué, fond SVG transparent, courbes non modifiées',()=>{
+  const create=ctx.document.createElement;
+  ctx.document.createElement=(name)=>name==='style'?{id:'',textContent:''}:create(name);
+  try{
+    const c=new Card();c.setConfig({format:'sun-home',sun_mask_border:true});
+    let style=null,config=null;
+    const node={setConfig(cfg){config=cfg;},shadowRoot:{querySelector(){return style;},appendChild(s){style=s;}},set hass(x){}};
+    c.shadowRoot.querySelector=()=>node;
+    c._hass={states:{'sensor.terrasse_solar_diagram':{state:'ok'}}};
+    c._config.sun_diagram_entity='sensor.terrasse_solar_diagram';
+    c._updateSolarChart();
+    assert.equal(config.height,240);
+    assert.match(style.textContent,/\.card-header,#title\{display:none!important\}/);
+    assert.match(style.textContent,/#chart-container svg>rect\{fill:transparent!important\}/);
+    assert.doesNotMatch(style.textContent,/ha-card\{border:0!important/);
+    c._config.sun_mask_border=false;c._updateSolarChart();
+    assert.match(style.textContent,/ha-card\{border:0!important/);
+    assert.match(style.textContent,/#chart-container svg>rect\{fill:transparent!important\}/);
+  }finally{ctx.document.createElement=create;}
 });

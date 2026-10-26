@@ -1,12 +1,12 @@
 /**
- * Niak Weather Modular Card — 0.2.9-beta.1
+ * Niak Weather Modular Card — 0.2.9-beta.2
  * Standalone dashboard card consuming the original Niak Weather websocket view.
  * Inspired by Niak Weather by Niakman13 (MIT); see LICENSE and README.md.
  * No Python integration replacement, cloud calls or external JavaScript dependencies.
  */
 (() => {
   'use strict';
-  const VERSION = '0.2.9-beta.1';
+  const VERSION = '0.2.9-beta.2';
   const ELEMENT = 'niak-weather-modular-card';
   const FORMATS = [
     ['full','Carte complète Niak Weather','Carte officielle complète, personnalisable, avec Lune facultative'],
@@ -351,9 +351,9 @@
       source('Home Assistant · Solar Mask',c)+'</header>';
     const metrics='<div class="sun-metrics">'+
       '<div class="sun-metric" data-entity="'+esc(c.sun_difference_entity||'sensor.difference_de_soleil')+'">'+
-      label('Évolution du jour')+'<b>'+esc(diff)+'</b><small>Durée gagnée ou perdue</small></div>'+
+      label('Évolution du jour')+'<b>'+esc(diff)+'</b></div>'+
       '<div class="sun-metric" data-entity="'+esc(c.sun_duration_entity||'sensor.sunterrasse_sun_duration')+'">'+
-      label('Ensoleillement de la maison')+'<b>'+esc(duration)+'</b><small>Durée de la zone mesurée</small></div></div>';
+      label('Ensoleillement de la maison')+'<b>'+esc(duration)+'</b></div></div>';
     const events=[['Aube','next_dawn','mdi:weather-sunset-up'],['Lever','next_rising','mdi:weather-sunny'],
       ['Coucher','next_setting','mdi:weather-sunset-down'],['Crépuscule','next_dusk','mdi:weather-night']];
     const times=opt(c,'sun_show_times')?'<div class="sun-times">'+events.map(([name,attr,symbol])=>
@@ -375,7 +375,7 @@
     const url=radarURL(actual?c.radar_url_current:c.radar_url_forecast);
     const h=Math.max(180,Math.min(950,Number(c.radar_height)||420));
     return '<section class="radar-frame" data-radar-panel="'+kind+'">'+
-      '<header>'+icon(actual?'mdi:weather-rainy':'mdi:cloud-clock')+'<strong>'+name+'</strong></header>'+
+      
       (url?'<iframe loading="lazy" title="'+name+'" src="'+esc(url)+
         '" style="height:'+h+'px" referrerpolicy="no-referrer-when-downgrade" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>':
         '<p class="sun-note">Adresse à renseigner dans la configuration. Aucune URL n’est définie par défaut.</p>')+
@@ -596,8 +596,10 @@
     .sun-head .source{margin-left:auto}
     .sun-day{font-size:12px;color:var(--nw-fg2)}
     .sun-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    .sun-metric{padding:14px;border-radius:12px;background:color-mix(in srgb,var(--nw-calm) 12%,transparent);display:flex;flex-direction:column;gap:6px}
-    .sun-metric b{font-size:24px;font-weight:750;font-variant-numeric:tabular-nums}
+    .sun-metric{padding:10px 12px;border-radius:12px;background:transparent;display:flex;flex-direction:column;gap:5px}
+    .sun-metric .label{font-size:10px;letter-spacing:.7px}
+    .sun-metric b{font-size:22px;font-weight:750;line-height:1.22}
+    .sun-metric b{font-variant-numeric:tabular-nums}
     .sun-metric small{font-size:11px;color:var(--nw-fg2)}
     .sun-times{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
     .sun-time{padding:10px 6px;border:1px solid var(--nw-line);border-radius:12px;display:flex;flex-direction:column;gap:5px;align-items:center;text-align:center}
@@ -609,7 +611,7 @@
     .radar-grid{display:grid;gap:14px}
     .radar-grid.radar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     .radar-grid.radar-stack,.radar-grid.radar-tabs{grid-template-columns:minmax(0,1fr)}
-    .radar-frame{min-width:0;display:flex;flex-direction:column;gap:8px}
+    .radar-frame{min-width:0;display:flex;flex-direction:column;gap:0}
     .radar-frame header{display:flex;align-items:center;gap:8px}
     .radar-frame header ha-icon{--mdc-icon-size:20px;color:var(--nw-wind)}
     .radar-frame strong{font-size:14px}
@@ -636,7 +638,7 @@
     .sun-compact .sun-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
     .sun-compact .sun-metric{padding:8px 9px;gap:3px;border-radius:9px;min-width:0}
     .sun-compact .sun-metric .label{font-size:9px;line-height:1.3}
-    .sun-compact .sun-metric b{font-size:18px;line-height:1.2}
+    .sun-compact .sun-metric b{font-size:17px;line-height:1.2}
     .sun-compact .sun-metric small{font-size:10px;line-height:1.3}
     .sun-compact .sun-times{grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
     .sun-compact .sun-time{padding:6px 2px;gap:3px;border-radius:8px;min-width:0}
@@ -960,7 +962,7 @@
       const node=this.shadowRoot.querySelector?.('solar-mask-card');
       if(!diagram||!node||typeof node.setConfig!=='function')return;
       const cfg={entity:diagram,...(elevation?{sun_entity:elevation}:{}),
-        height:Math.max(180,Math.min(c.sun_compact===false?620:260,Number(c.sun_diagram_height)||(c.sun_compact===false?320:220)))};
+        height:Math.max(180,Math.min(c.sun_compact===false?620:260,Number(c.sun_diagram_height)||(c.sun_compact===false?320:240)))};
       const key=JSON.stringify(cfg);
       if(node._niakSolarKey!==key){node.setConfig(cfg);node._niakSolarKey=key;}
       if(this._hass)node.hass=this._hass;
@@ -972,7 +974,14 @@
           ':host{--ha-card-border-width:0!important;--ha-card-box-shadow:none!important;--ha-card-background:transparent!important}',
           'ha-card{border:0!important;box-shadow:none!important;outline:none!important;background:transparent!important}'
         ]:[];
-        style.textContent=[...borderless,...(c.sun_compact===false?[]:[
+        // Remove the duplicated Solar Mask title and its opaque SVG plot background.
+        // The graphic paths, labels and legend remain untouched.
+        const diagramStyle=[
+          '.card-header,#title{display:none!important}',
+          '#chart-container svg>rect{fill:transparent!important}',
+          '#chart-container{background:transparent!important}'
+        ];
+        style.textContent=[...borderless,...diagramStyle,...(c.sun_compact===false?[]:[
           'ha-card{padding:7px 5px 8px!important}',
           '.card-header{font-size:12px!important;padding-bottom:3px!important}',
           '.legend{font-size:10px!important;gap:3px 8px!important;margin-top:4px!important}',
@@ -1081,7 +1090,7 @@
       toggle('sun_show_diagram','Afficher la carte Solar Mask')+
       '<label class="toggle"><input type="checkbox" name="sun_compact" '+(c.sun_compact!==false?'checked':'')+'/>Affichage compact (recommandé)</label>'+
       '<label class="toggle"><input type="checkbox" name="sun_mask_border" '+(c.sun_mask_border===true?'checked':'')+'/>Afficher la bordure Solar Mask</label>'+
-      text('sun_diagram_height','Hauteur du diagramme (px, 220 par défaut en compact)','220')+
+      text('sun_diagram_height','Hauteur du diagramme (px, 240 par défaut en compact)','240')+
       '<p class="hint">La carte Solar Mask et son intégration doivent être installées pour afficher le diagramme. Les horaires sont les prochains événements de sun.sun.</p></fieldset>':'';
     const radars=radar?'<fieldset><legend>Radars de pluie — URL à renseigner</legend>'+
       text('radar_url_current','Adresse URL du radar actuel','https://votre-site/radar-actuel')+
