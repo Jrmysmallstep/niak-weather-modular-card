@@ -35,38 +35,8 @@ const view={
  air:{today:[{kind:'pollen',scale:6,zone:'Isère',source:'Atmo France',primary:{value:2,label:'Faible'},details:[{label:'Graminées',reading:{label:'Faible',value:2}}]},{kind:'air',scale:6,source:'Atmo France',primary:{value:3,label:'Moyen'},details:[]}],tomorrow:[{kind:'pollen',scale:6,source:'Atmo France',primary:{value:3,label:'Moyen'},details:[]}]},
 };
 
-test('les 13 formats sont déclarés dans le sélecteur Home Assistant',()=>{
-  assert.equal(ctx.window.customCards.length,17);
-  for(const {type} of ctx.window.customCards) assert.ok(registered.get(type));
-});
-
-test('chaque format produit un rendu autonome sans erreur',()=>{
-  for(const f of ['summary','current','bulletin','events','comfort','extras','solar','uv','lux','humidity','dew','rain','wind','pressure','pollen','hours','days','pollen-forecast','air','moon','sun-home','radars']){
-    const c=new Card(); c.setConfig({type:'custom:niak-weather-modular-card',format:f}); c._view=view;c._render();
-    assert.ok(!c.shadowRoot.innerHTML.includes('Erreur d’affichage :'),f);
-    assert.ok(c.shadowRoot.innerHTML.includes('<ha-card'),f);
-    assert.ok(c.shadowRoot.innerHTML.includes('</ha-card>'),f);
-    assert.ok(!c.shadowRoot.innerHTML.includes('Aujourd’hui – Mesures et ressenti'),f);
-  }
-});
-
-test('vent indépendant : titre/source masquables et mesures présentes',()=>{
-  const c=new Card();c.setConfig({format:'wind',show_title:false,show_source:false});c._view=view;c._render();
-  const out=c.shadowRoot.innerHTML;
-  assert.ok(out.includes('km/h'));
-  assert.ok(out.includes('Rafales'));
-  assert.ok(!out.includes('<strong>Vent</strong>'));
-  assert.ok(!out.includes('Station locale'));
-});
-
-test('les prévisions pollens utilisent demain, pas aujourd’hui',()=>{
-  const c=new Card();c.setConfig({format:'pollen-forecast'});c._view=view;c._render();
-  assert.ok(c.shadowRoot.innerHTML.includes('Indice de demain'));
-  assert.ok(!c.shadowRoot.innerHTML.includes('Graminées'));
-});
-
 test('les textes météo sont échappés dans le HTML',()=>{
-  const c=new Card();c.setConfig({format:'bulletin'});
+  const c=new Card();c.setConfig({format:'overview'});
   c._view={...view,bulletin:{summary:'<img src=x onerror=alert(1)>'}};c._render();
   assert.ok(c.shadowRoot.innerHTML.includes('&lt;img'));
   assert.ok(!c.shadowRoot.innerHTML.includes('<img src=x'));
@@ -74,22 +44,22 @@ test('les textes météo sont échappés dans le HTML',()=>{
 
 test('la carte consomme la commande websocket officielle version 1',async()=>{
   let requested,callback;
-  const c=new Card();c.setConfig({format:'pressure'});
+  const c=new Card();c.setConfig({format:'overview'});
   c.hass={connection:{subscribeMessage(cb,msg){callback=cb;requested=msg;return Promise.resolve(()=>{});}}};
   assert.equal(requested.type,'hestia_weather/subscribe');
   callback({version:1,view});
-  assert.match(c.shadowRoot.innerHTML,/1[\u202f\s]?018/);
+  assert.match(c.shadowRoot.innerHTML,/Nuageux/);
   await Promise.resolve();c.disconnectedCallback();
 });
 
 test('repli sur l’ancien domaine niak_weather si hestia_weather est inconnu',async()=>{
   const asked=[];let callback;
-  const c=new Card();c.setConfig({format:'pressure'});
+  const c=new Card();c.setConfig({format:'overview'});
   c.hass={connection:{subscribeMessage(cb,msg){asked.push(msg.type);if(msg.type==='hestia_weather/subscribe')return Promise.reject({code:'unknown_command'});callback=cb;return Promise.resolve(()=>{});}}};
   await new Promise(r=>setTimeout(r,0));
   assert.deepEqual(asked,['hestia_weather/subscribe','niak_weather/subscribe']);
   callback({version:1,view});
-  assert.match(c.shadowRoot.innerHTML,/1[\u202f\s]?018/);
+  assert.match(c.shadowRoot.innerHTML,/Nuageux/);
   c.disconnectedCallback();
 });
 
@@ -103,7 +73,7 @@ test('éditeur visuel déclaré',()=>{
 
 test('fond semi-transparent par défaut, thème et transparent configurables',()=>{
   for(const [mode,expected] of [[undefined,'bg-glass'],['glass','bg-glass'],['theme','bg-theme'],['transparent','bg-transparent']]) {
-    const c=new Card();c.setConfig({format:'wind',...(mode?{background_mode:mode}:{})});c._view=view;c._render();
+    const c=new Card();c.setConfig({format:'overview',...(mode?{background_mode:mode}:{})});c._view=view;c._render();
     assert.match(c.shadowRoot.innerHTML,new RegExp('<ha-card class="'+expected+' '));
   }
   assert.match(script,/backdrop-filter:blur\(12px\)/);
@@ -112,7 +82,7 @@ test('fond semi-transparent par défaut, thème et transparent configurables',()
 });
 
 test('l’éditeur propose les trois modes de fond',()=>{
-  const el=Card.getConfigElement();el.setConfig({format:'wind',background_mode:'theme'});
+  const el=Card.getConfigElement();el.setConfig({format:'overview',background_mode:'theme'});
   assert.match(el.shadowRoot.innerHTML,/Verre dépoli/);
   assert.match(el.shadowRoot.innerHTML,/Thème Home Assistant/);
   assert.match(el.shadowRoot.innerHTML,/Transparent \(sans fond\)/);
@@ -122,11 +92,11 @@ test('l’éditeur propose les trois modes de fond',()=>{
 
 test('la frise garde son instance et son défilement entre deux mises à jour météo',()=>{
   // Simule l’élément Lit Niak déjà chargé par l’intégration officielle.
-  if(!registered.get('niak-frise'))registered.set('niak-frise',class {});
-  const card=new Card();card.setConfig({format:'events'});card._view=view;card._render();
+  if(!registered.get('hestia-frise'))registered.set('hestia-frise',class {});
+  const card=new Card();card.setConfig({format:'overview',show_events:true});card._view=view;card._render();
   const markup=card.shadowRoot.innerHTML;
   const frise={points:[],alerts:[],hours:[],timeline:undefined};
-  card.shadowRoot.querySelectorAll=selector=>selector==='niak-frise'?[frise]:[];
+  card.shadowRoot.querySelectorAll=selector=>selector==='hestia-frise,niak-frise'?[frise]:[];
   const nextPoints=[...view.points,{label:'Vent',text:'Rafales ce soir',icon:'mdi:weather-windy',clock:'20 h'}];
   card._view={...view,points:nextPoints};
   card._render();
@@ -144,69 +114,6 @@ test('la frise reprend la charte CSS de Niak Weather',()=>{
   assert.match(script,/label\('Événements'\)/);
 });
 
-
-test('ressenti individuel : jauge dégradée avec repères de température et valeur',()=>{
-  const c=new Card();c.setConfig({format:'comfort'});c._view={...view,station:true};c._render();
-  const out=c.shadowRoot.innerHTML;
-  assert.match(out,/comfort-rail-line/);
-  assert.match(out,/comfort-thermo" style="left:46%"/);
-  assert.match(out,/comfort-feel" style="left:44%"/);
-  assert.match(out,/−5°/);
-  assert.match(out,/45°/);
-  assert.match(out,/−1 °C par rapport au thermomètre/);
-  assert.match(out,/Explication du ressenti/);
-});
-
-test('ressenti individuel : graphiques détails titre et source masquables',()=>{
-  const c=new Card();c.setConfig({format:'comfort',show_title:false,show_source:false,show_chart:false,show_details:false});
-  c._view={...view,station:true};c._render();
-  const out=c.shadowRoot.innerHTML;
-  const main=out.slice(out.indexOf('<ha-card'));
-  assert.doesNotMatch(main,/comfort-rail-line/);
-  assert.doesNotMatch(main,/Station locale/);
-  assert.doesNotMatch(main,/<strong>Ressenti<\/strong>/);
-  assert.doesNotMatch(main,/comfort-help/);
-  assert.match(main,/km\/h|17/);
-});
-
-test('ressenti individuel : le repère thermomètre est optionnel',()=>{
-  const c=new Card();c.setConfig({format:'comfort'});c._view={...view,comfort:{...view.comfort,temperature:undefined}};c._render();
-  const main=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.match(main,/class="comfort-feel"/);
-  assert.doesNotMatch(main,/class="comfort-thermo"/);
-});
-
-
-test('les 5 cartes indicateurs présentent uniquement leur mesure',()=>{
-  for(const [format,needed,excluded] of [['solar','0 W/m²','94 %'],['uv','UV faible','9,9 °C'],['lux','lux','94 %'],['humidity','94 %','0 W/m²'],['dew','9,9 °C','94 %']]) {
-    const c=new Card();c.setConfig({format});c._view=view;c._render();const v=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
-    assert.ok(v.includes(needed),format);assert.ok(!v.includes(excluded),format);assert.ok(!v.includes('>Indicateurs<'),format);
-  }
-});
-
-test('indicateurs groupés : 5 pastilles Niak, sans pollen dupliqué',()=>{
-  const c=new Card();c.setConfig({format:'extras',background_mode:'transparent'});c._view=view;c._render();
-  const v=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.equal((v.match(/class="extra-chip"/g)||[]).length,5);
-  assert.ok(v.includes('sensor.solar'));assert.ok(v.includes('sensor.dew_point'));assert.ok(!v.includes('sensor.pollen'));
-  assert.ok(v.includes('bg-transparent'));assert.ok(!v.includes('>Indicateurs<'));
-});
-
-test('indicateurs groupés : filtrer humidité et rosée',()=>{
-  const c=new Card();c.setConfig({format:'extras',extras_blocks:['humidity','dew']});c._view=view;c._render();
-  const v=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.equal((v.match(/class="extra-chip"/g)||[]).length,2);
-  assert.ok(v.includes('94 %'));assert.ok(v.includes('9,9 °C'));assert.ok(!v.includes('solar-power'));
-});
-
-test('éditeur indicateurs et protection HTML',()=>{
-  const ed=Card.getConfigElement();ed.setConfig({format:'extras',extras_blocks:['uv']});
-  assert.match(ed.shadowRoot.innerHTML,/Indicateurs à afficher/);assert.match(ed.shadowRoot.innerHTML,/data-extra="1"/);
-  assert.match(ed.shadowRoot.innerHTML,/value="uv" checked/);
-  const c=new Card();c.setConfig({format:'solar'});c._view={...view,extras:[{theme:'level1',icon:'mdi:solar-power-variant-outline',value:'<script>alert(1)</script>',label:'soleil'}]};c._render();
-  const v=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.match(v,/&lt;script&gt;/);assert.doesNotMatch(v,/<script>alert/);
-});
 
 test('Lune : fonctionne sans WebSocket Niak Weather, avec les attributs Lunar Phase',()=>{
   const moon={state:'waxing_crescent',attributes:{
@@ -275,7 +182,7 @@ test('refonte : options de la synthèse et anciens formats rétrocompatibles',()
  card._view=view;card._render();const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
  assert.match(html,/ov-now/);assert.doesNotMatch(html,/ov-bulletin|ov-range|ov-trend/);
  const old=new Card();old.setConfig({format:'uv'});old._view=view;old._render();
- assert.match(old.shadowRoot.innerHTML,/UV faible/);
+ assert.match(old.shadowRoot.innerHTML,/hestia-weather-card/);
  assert.ok(!ctx.window.customCards.some(x=>/-uv-card$|-solar-card$|-current-card$|-summary-card$/.test(x.type)));
 });
 test('Lune : images originales, personnalisées et SVG avec repli',()=>{
@@ -391,173 +298,6 @@ test('Synthèse : éditeur propose les deux dispositions indépendamment de gauc
 });
 
 
-test('Air extérieur : jauge ATMO, polluants complets et publication',()=>{
-  const item={kind:'air',tomorrow:false,scale:6,source:'Atmo France',zone:'Isère',updated:'25 octobre',
-    primary:{entityId:'sensor.atmo',value:3,label:'Moyen'},
-    worse:{label:'PM2,5',reading:{value:4,label:'Dégradé',entityId:'sensor.pm25'}},
-    details:[{label:'NO₂',reading:{entityId:'sensor.no2',value:2,label:'Faible'},
-      concentration:{value:12.5,unit:'µg/m³'}}]};
-  const card=new Card();card.setConfig({format:'air',air_details_open:true});
-  card._view={...view,air:{today:[item],tomorrow:[]}};card._render();
-  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.match(html,/atmo-gauge/);assert.match(html,/Niveau 3 sur 6/);assert.match(html,/12,5 µg\/m³/);
-  assert.match(html,/NO₂/);assert.match(html,/PM2,5/);assert.match(html,/25 octobre/);
-  assert.match(html,/details class="atmo-details" open/);
-});
-
-test('Air extérieur : panneaux Aujourd’hui et Demain, ordre et position configurables',()=>{
-  const today={kind:'air',tomorrow:false,scale:6,primary:{value:3,label:'Moyen'},details:[]};
-  const tomorrow={kind:'air',tomorrow:true,scale:6,primary:{value:2,label:'Bon'},details:[]};
-  const card=new Card();card.setConfig({format:'air',air_period:'both',air_order:'tomorrow-first',
-    air_layout:'grid',air_gauge_position:'right',air_source_position:'footer'});
-  card._view={...view,air:{today:[today],tomorrow:[tomorrow]}};card._render();
-  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.match(html,/atmo-layout-grid/);assert.match(html,/gauge-right/);
-  assert.ok(html.indexOf('Indice de demain')<html.indexOf('Indice du jour'));
-  assert.equal((html.match(/class="atmo-panel"/g)||[]).length,2);
-  assert.match(html,/atmo-foot/);
-});
-
-test('Air extérieur : masquer titre/date/source/jauge/détails et gérer indice hors échelle',()=>{
-  const card=new Card();card.setConfig({format:'air',show_date:false,show_title:false,show_source:false,
-    show_chart:false,show_details:false,air_show_zone:false,air_show_updated:false});
-  card._view={...view,air:{today:[{kind:'air',source:'Atmo France',zone:'Isère',
-    primary:{value:7,label:'Événement signalé'},details:[]}]}};card._render();
-  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.match(html,/Code 7 · hors échelle/);
-  assert.doesNotMatch(html,/atmo-gauge|Atmo France|dimanche 25 octobre|Isère/);
-});
-
-test('Air extérieur : mode source personnalisée et texte échappé',()=>{
-  const card=new Card();card.setConfig({format:'air',air_source_mode:'custom',
-    air_source_custom:'<img src=x onerror=alert(1)>',air_source_position:'footer'});
-  card._view=view;card._render();
-  const html=card.shadowRoot.innerHTML.slice(card.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.match(html,/&lt;img src=x onerror=alert\(1\)&gt;/);
-  assert.doesNotMatch(html,/<img src=x/);
-  assert.match(html,/atmo-foot/);
-});
-
-test('Air extérieur : éditeur visuel expose les sélections et options du format',()=>{
-  const editor=Card.getConfigElement();editor.setConfig({format:'air',air_layout:'stack',
-    air_period:'both',air_source_mode:'custom',air_details_open:true});
-  const html=editor.shadowRoot.innerHTML;
-  for(const key of ['air_period','air_layout','air_order','air_gauge_position','air_source_mode','air_source_custom',
-    'air_source_position','air_show_zone','air_show_updated','air_show_worse','air_details_open'])
-      assert.ok(html.includes('name="'+key+'"'),key);
-  assert.match(html,/value="stack" selected/);
-  assert.match(html,/value="both" selected/);
-  assert.match(html,/value="custom" selected/);
-});
-
-
-test('Carte complète : format officiel disponible, attend le composant Niak Weather',()=>{
-  const card=new Card();card.setConfig({format:'full',full_show_moon:true});
-  assert.match(card.shadowRoot.innerHTML,/Niak Weather officiel est introuvable/);
-  assert.equal(card.getCardSize(),13);
-  assert.ok(ctx.window.customCards.some(x=>x.type==='niak-weather-modular-full-card'));
-});
-
-test('Carte complète : éditeur expose l’ordre des blocs, fond, sources, date et Lune',()=>{
-  const editor=Card.getConfigElement();
-  editor.setConfig({format:'full',full_show_moon:true,full_moon_position:'before'});
-  const html=editor.shadowRoot.innerHTML;
-  for(const key of ['full_show_banner','full_show_moon','full_modules_position','temperature_position',
-    'full_source_position','banner_blocks','today_blocks','forecast_blocks','show_date','show_source','background_mode',
-    'moon_visual_mode','moon_entity']){
-    assert.ok(html.includes(key),key);
-  }
-  assert.match(html,/Carte complète Niak Weather/);
-  assert.match(html,/Au-dessus de la météo complète/);
-});
-
-test('Carte complète : changement de rang dans l’éditeur enregistré',()=>{
-  const editor=Card.getConfigElement();editor.setConfig({format:'full'});
-  editor._change({target:{dataset:{fullGroup:'today_blocks',fullBlock:'pressure'},value:'1'}});
-  assert.equal(editor._config.today_blocks[0],'pressure');
-  editor._change({target:{dataset:{fullGroup:'today_blocks',fullBlock:'pressure'},value:'off'}});
-  assert.ok(!editor._config.today_blocks.includes('pressure'));
-});
-
-test('Carte complète : ne crée pas de seconde souscription météo',()=>{
-  let called=0;
-  const card=new Card();card.setConfig({format:'full'});
-  card.hass={connection:{subscribeMessage(){called++;return Promise.resolve(()=>{});}}};
-  assert.equal(called,0);
-  assert.match(script,/fullOriginalConfig\(c\)/);
-  assert.match(script,/orderedFullModules\(c\)/);
-  assert.match(script,/fullOriginalCSS\(c\)/);
-});
-
-
-test('Carte complète : réutilise Niak officiel et affiche Lune, Soleil et Radars dans la même grille',()=>{
-  const existing=registered.get('niak-weather-card');
-  registered.set('niak-weather-card',class {});
-  const originalCreate=ctx.document.createElement;
-  let style=null, seen=null, updates=0, grid=null;
-  const native={shadowRoot:{querySelector(s){return s==='#niak-full-custom-style'?style:null;},
-    appendChild(s){style=s;}},setConfig(c){seen=c;updates++;}};
-  const wrapper={querySelector(sel){
-    if(sel==='niak-weather-card')return native;
-    if(sel==='.full-addon-grid')return grid;
-    return null;
-  },appendChild(child){grid=child;child.parentElement=this;}};
-  ctx.document.createElement=tag=>{
-    if(tag==='style')return {textContent:'',id:''};
-    if(tag==='div'){
-      const children=new Map(),classes=new Set();
-      const g={className:'full-addon-grid',classList:{toggle(k,v){v?classes.add(k):classes.delete(k);},contains(k){return classes.has(k);}},
-        querySelector(s){return children.get(s)||null;},
-        appendChild(c){children.set('.'+c.className,c);c.parentElement=this;c.remove=()=>children.delete('.'+c.className);},
-        remove(){grid=null;},_children:children};
-      return g;
-    }
-    const element=originalCreate(tag);
-    if(element&&!element.style)element.style={};
-    return element;
-  };
-  try{
-    const card=new Card();
-    card.setConfig({format:'full',temperature_position:'left',show_date:false,show_source:false,
-      background_mode:'transparent',full_show_sun:true,full_show_moon:true,full_show_radars:true,
-      full_modules_position:'before',full_modules_order:['moon','sun','radars'],
-      radar_url_current:'',radar_url_forecast:'',
-      today_blocks:['pressure','wind'],forecast_blocks:['days'],banner_blocks:['events']});
-    card.shadowRoot.querySelector=s=>s==='.full-native-wrapper'?wrapper:null;
-    const hass={states:{'sensor.lunar_phase':{state:'full_moon',attributes:{moon_age:14.7,illumination_fraction:100}}},connection:{}};
-    card.hass=hass;
-    assert.equal(seen.type,'custom:niak-weather-card');
-    assert.equal(seen.format,'full');
-    assert.equal(seen.today_blocks.join(','),'pressure,wind');
-    assert.equal(seen.forecast_blocks.join(','),'days');
-    assert.equal(seen.banner_blocks.join(','),'events');
-    assert.equal(updates,1,'ne reconfigure pas inutilement Niak officiel');
-    assert.ok(grid?.classList.contains('addons-before'));
-    assert.equal(grid._children.size,3);
-    const moon=grid.querySelector('.full-native-moon'),sun=grid.querySelector('.full-native-sun'),
-      radars=grid.querySelector('.full-native-radars');
-    assert.equal(moon.style.order,0);
-    assert.equal(sun.style.order,1);
-    assert.equal(radars.style.order,2);
-    assert.equal(moon._config.format,'moon');
-    assert.equal(sun._config.format,'sun-home');
-    assert.equal(radars._config.format,'radars');
-    assert.equal(radars._config.radar_layout,'tabs','Onglets lisibles dans un tiers de largeur');
-    assert.equal(moon.hass,hass);
-    assert.match(style.textContent,/nw-now/);
-    assert.match(style.textContent,/transparent/);
-    card.setConfig({...card._config,full_modules_position:'after',
-      full_modules_order:['radars','moon','sun'],full_show_moon:false});
-    assert.ok(!grid.classList.contains('addons-before'));
-    assert.equal(grid._children.size,2);
-    assert.equal(grid.querySelector('.full-native-radars').style.order,0);
-    assert.equal(grid.querySelector('.full-native-sun').style.order,2);
-  }finally{
-    ctx.document.createElement=originalCreate;
-    if(existing)registered.set('niak-weather-card',existing);else registered.delete('niak-weather-card');
-  }
-});
-
 test('Soleil : capteurs réels, durée en minutes, date explicite des prochains événements',()=>{
   const card=new Card();card.setConfig({format:'sun-home',show_source:true,sun_show_diagram:false});
   card.hass={states:{
@@ -619,44 +359,6 @@ test('Éditeur : Soleil et Radars configurables, sans URL préremplie',()=>{
     assert.match(radar.shadowRoot.innerHTML,new RegExp('name="'+id+'"'));
   assert.doesNotMatch(radar.shadowRoot.innerHTML,/value="https:\/\/www\.meteo-grenoble/);
 });
-test('Carte complète : grille des trois modules et ordre personnalisable dans l’éditeur',()=>{
-  const editor=Card.getConfigElement();
-  editor.setConfig({format:'full',full_show_sun:true,full_show_moon:true,
-    full_show_radars:true,full_modules_order:['sun','moon','radars']});
-  const html=editor.shadowRoot.innerHTML;
-  for(const id of ['full_show_sun','full_show_radars','full_show_moon','full_modules_position',
-    'radar_url_current','radar_url_forecast','sun_diagram_entity'])
-    assert.match(html,new RegExp('name="'+id+'"'));
-  for(const i of [0,1,2])assert.match(html,new RegExp('data-module-order="'+i+'"'));
-  assert.match(html,/Au-dessus de la météo complète/);
-  editor._change({target:{dataset:{moduleOrder:'0'},value:'radars'}});
-  assert.equal(editor._config.full_modules_order.join(','),'radars,moon,sun');
-  editor._change({target:{dataset:{moduleOrder:'1'},value:'sun'}});
-  assert.equal(editor._config.full_modules_order.join(','),'radars,sun,moon');
-});
-test('Grille des modules : 3 cartes maximum sur PC, deux sur tablette, une sur mobile',()=>{
-  assert.match(script,/\.full-native-wrapper>\.full-addon-grid\{grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(script,/\.full-native-wrapper>\.full-addon-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(script,/\.full-native-wrapper>\.full-addon-grid\{\s*display:grid;grid-template-columns:minmax\(0,1fr\)/);
-  assert.doesNotMatch(script,/this\._syncFullSun\(native,wrapper\)/);
-});
-test('Soleil compact : indicateurs réduits, Solar Mask conservé',()=>{
-  const existing=registered.get('solar-mask-card');registered.set('solar-mask-card',class {});
-  try{
-    const c=new Card();c.setConfig({format:'sun-home',sun_diagram_entity:'sensor.terrasse_solar_diagram'});
-    c.hass={states:{'sensor.terrasse_solar_diagram':{state:'available',attributes:{}},
-      'sensor.difference_de_soleil':{state:'-3',attributes:{}},
-      'sensor.sunterrasse_sun_duration':{state:'390',attributes:{}},
-      'sun.sun':{state:'above_horizon',attributes:{}}}};
-    const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
-    assert.match(html,/sun-home sun-compact/);
-    assert.match(html,/−3 min/);assert.match(html,/6h30/);
-    assert.match(html,/<solar-mask-card><\/solar-mask-card>/);
-    assert.equal(c.getGridOptions().columns,4);
-    assert.match(script,/\.sun-compact \.sun-metric b\{font-size:17px/);
-    assert.match(script,/c\.sun_compact===false\?620:260/);
-  }finally{if(existing)registered.set('solar-mask-card',existing);else registered.delete('solar-mask-card');}
-});
 test('Soleil : mode détaillé facultatif conserve la taille du graphique',()=>{
   const c=new Card();c.setConfig({format:'sun-home',sun_compact:false});
   c.hass={states:{'sun.sun':{state:'above_horizon',attributes:{}}}};
@@ -664,41 +366,15 @@ test('Soleil : mode détaillé facultatif conserve la taille du graphique',()=>{
   assert.match(html,/class="inner sun-home"/);
   assert.doesNotMatch(html,/sun-home sun-compact/);
 });
-test('Carte complète : Air et Pollens partagent une seule colonne de météo',()=>{
-  assert.match(script,/\.panels-two\{box-sizing:border-box;width:calc\(\(100% - 32px\)\/3\)/);
-  assert.match(script,/\.panels-two\{grid-template-columns:minmax\(0,1fr\)!important/);
-  assert.match(script,/\.panels-two \.aq \.disc\{width:52px!important/);
-  const e=Card.getConfigElement();e.setConfig({format:'full',full_show_sun:true});
-  const html=e.shadowRoot.innerHTML;
-  assert.match(html,/name="full_compact_air"/);
-  assert.match(html,/Air extérieur \+ Pollens : largeur d’une carte/);
-});
-test('Aujourd’hui : Ressenti et Air/Pollens partagent deux colonnes sur PC et tablette',()=>{
-  assert.match(script,/\.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)>\.nw-panel\{grid-column:1;order:0/);
-  assert.match(script,/\.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)>\.panels-two\{grid-column:1;order:1;width:100%!important/);
-  assert.match(script,/@container \(min-width:560px\)\{\.fm-section\[aria-labelledby\$="-today"\] \.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)\{grid-template-columns:repeat\(2/);
-  assert.match(script,/@container \(min-width:860px\)\{\.fm-section\[aria-labelledby\$="-today"\] \.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)\{grid-template-columns:repeat\(3/);
-  assert.match(script,/\.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)>\.grid3\{grid-column:1\/-1;order:2/);
-  const e=Card.getConfigElement();e.setConfig({format:'full'});
-  assert.match(e.shadowRoot.innerHTML,/name="full_air_position"/);
-  assert.match(e.shadowRoot.innerHTML,/À côté de Ressenti/);
-});
 test('Soleil : éditeur propose taille compacte et graphique Solar Mask',()=>{
-  const e=Card.getConfigElement();e.setConfig({format:'full',full_show_sun:true});
+  const e=Card.getConfigElement();e.setConfig({format:'sun-home'});
   const html=e.shadowRoot.innerHTML;
-  assert.match(html,/Position de la ligne Soleil \/ Lune \/ Radars/);
   assert.match(html,/name="sun_compact"/);
   assert.match(html,/Afficher la carte Solar Mask/);
   assert.match(html,/Hauteur du diagramme/);
 });
 
 
-test('Air et Pollens : CSS compact appliqué à Aujourd’hui et aux Prévisions',()=>{
-  assert.match(script,/\.fm-section \.fm-body>\.panels-two\{box-sizing:border-box/);
-  assert.doesNotMatch(script,/\.fm-section\[aria-labelledby\$="-today"\] \.fm-body \.panels-two\{box-sizing:border-box/);
-  assert.match(script,/\.fm-body:has\(>\.nw-panel\):has\(>\.panels-two\)>\.panels-two\{grid-column:1;order:1;width:100%!important/);
-  assert.match(script,/\.fm-section \.panels-two>\.nw-panel\{border:0!important;box-shadow:none!important;background:transparent!important/);
-});
 test('Solar Mask : suppression de bordure indépendante du mode compact',()=>{
   const originalCreate=ctx.document.createElement;
   ctx.document.createElement=(name)=>name==='style'?{id:'',textContent:''}:originalCreate(name);
@@ -718,47 +394,6 @@ test('Solar Mask : suppression de bordure indépendante du mode compact',()=>{
     assert.doesNotMatch(style.textContent,/border:0!important/);
   }finally{ctx.document.createElement=originalCreate;}
 });
-test('Éditeur : options de bordures séparées pour Soleil et Air/Pollens',()=>{
-  const e=Card.getConfigElement();e.setConfig({format:'full',full_show_sun:true});
-  assert.match(e.shadowRoot.innerHTML,/name="sun_mask_border"/);
-  assert.match(e.shadowRoot.innerHTML,/name="full_air_border"/);
-  assert.match(e.shadowRoot.innerHTML,/aujourd’hui et demain/);
-});
-
-
-test('Air/Pollens : désactiver le placement à côté de Ressenti reste disponible',()=>{
-  const e=Card.getConfigElement();e.setConfig({format:'full',full_air_position:'after_measures'});
-  assert.match(e.shadowRoot.innerHTML,/value="after_measures" selected/);
-  assert.match(e.shadowRoot.innerHTML,/Après Pluie \/ Vent \/ Pression/);
-  assert.match(script,/c\.full_air_position!=='after_measures'/);
-});
-test('Ordre des trois modules : migration des anciennes positions numériques',()=>{
-  const e=Card.getConfigElement();
-  e.setConfig({format:'full',full_sun_order:'3',full_moon_order:'1',full_radars_order:'2',
-    full_show_sun:true,full_show_moon:true,full_show_radars:true});
-  const html=e.shadowRoot.innerHTML;
-  assert.match(html,/data-module-order="0"/);
-  assert.match(html,/data-module-order="1"/);
-  assert.match(html,/data-module-order="2"/);
-  const q=html.indexOf('data-module-order="0"'),option=html.slice(q,q+330);
-  assert.match(option,/value="moon" selected/);
-});
-
-
-test('Soleil : indicateurs allégés sans fond coloré ni sous-texte',()=>{
-  const c=new Card();c.setConfig({format:'sun-home'});
-  c.hass={states:{
-    'sun.sun':{state:'above_horizon',attributes:{}},
-    'sensor.difference_de_soleil':{state:'-3',attributes:{}},
-    'sensor.sunterrasse_sun_duration':{state:'380',attributes:{}}
-  }};
-  const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
-  assert.match(html,/Évolution du jour/);assert.match(html,/Ensoleillement de la maison/);
-  assert.doesNotMatch(html,/Durée gagnée ou perdue|Durée de la zone mesurée/);
-  assert.match(script,/\.sun-metric\{[^}]*background:transparent/);
-  assert.match(script,/\.sun-compact \.sun-metric b\{font-size:17px/);
-});
-
 test('Radars : sous-titres redondants absents, iframes toujours accessibles',()=>{
   const c=new Card();c.setConfig({format:'radars',radar_layout:'stack',
     radar_url_current:'https://example.org/radar',
@@ -790,4 +425,70 @@ test('Solar Mask : titre masqué, fond SVG transparent, courbes non modifiées',
     assert.match(style.textContent,/ha-card\{border:0!important/);
     assert.match(style.textContent,/#chart-container svg>rect\{fill:transparent!important\}/);
   }finally{ctx.document.createElement=create;}
+});
+
+test('Soleil compact : indicateurs réduits, Solar Mask conservé',()=>{
+  const existing=registered.get('solar-mask-card');registered.set('solar-mask-card',class {});
+  try{
+    const c=new Card();c.setConfig({format:'sun-home',sun_diagram_entity:'sensor.terrasse_solar_diagram'});
+    c.hass={states:{'sensor.terrasse_solar_diagram':{state:'available',attributes:{}},
+      'sensor.difference_de_soleil':{state:'-3',attributes:{}},
+      'sensor.sunterrasse_sun_duration':{state:'390',attributes:{}},
+      'sun.sun':{state:'above_horizon',attributes:{}}}};
+    const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+    assert.match(html,/sun-home sun-compact/);
+    assert.match(html,/−3 min/);assert.match(html,/6h30/);
+    assert.match(html,/<solar-mask-card><\/solar-mask-card>/);
+    assert.equal(c.getGridOptions().columns,4);
+    assert.match(script,/\.sun-compact \.sun-metric b\{font-size:17px/);
+    assert.match(script,/c\.sun_compact===false\?620:260/);
+  }finally{if(existing)registered.set('solar-mask-card',existing);else registered.delete('solar-mask-card');}
+});
+
+test('Soleil : indicateurs allégés sans fond coloré ni sous-texte',()=>{
+  const c=new Card();c.setConfig({format:'sun-home'});
+  c.hass={states:{
+    'sun.sun':{state:'above_horizon',attributes:{}},
+    'sensor.difference_de_soleil':{state:'-3',attributes:{}},
+    'sensor.sunterrasse_sun_duration':{state:'380',attributes:{}}
+  }};
+  const html=c.shadowRoot.innerHTML.slice(c.shadowRoot.innerHTML.indexOf('<ha-card'));
+  assert.match(html,/Évolution du jour/);assert.match(html,/Ensoleillement de la maison/);
+  assert.doesNotMatch(html,/Durée gagnée ou perdue|Durée de la zone mesurée/);
+  assert.match(script,/\.sun-metric\{[^}]*background:transparent/);
+  assert.match(script,/\.sun-compact \.sun-metric b\{font-size:17px/);
+});
+
+test('add-on : seulement Synthèse, Lune, Soleil et Radars dans le sélecteur',()=>{
+  assert.deepEqual(ctx.window.customCards.map(x=>x.type).sort(),
+    ['niak-weather-modular-moon-card','niak-weather-modular-overview-card','niak-weather-modular-radars-card','niak-weather-modular-sun-home-card']);
+});
+
+test('anciens formats : message clair vers la carte hestia-weather-card, sans erreur',()=>{
+  for(const f of ['full','wind','rain','pressure','air','pollen','hours','days','comfort','extras','bulletin','events']){
+    const c=new Card();c.setConfig({format:f});c._render();
+    assert.match(c.shadowRoot.innerHTML,/hestia-weather-card/,f);
+    assert.ok(registered.get('niak-weather-modular-'+f+'-card'),f);
+  }
+  assert.throws(()=>new Card().setConfig({format:'inconnu'}));
+});
+
+test('thème : couleurs Hestia Weather en priorité, anciennes variables Niak en repli',()=>{
+  assert.match(script,/--nw-wind:var\(--hestia-wind-color,var\(--niak-wind-color,#8798d2\)\)/);
+  assert.match(script,/--nw-heat:var\(--hestia-heat-color,var\(--niak-heat-color,/);
+});
+
+test('Synthèse : le ciel animé et la frise de l’intégration Hestia sont reconnus',()=>{
+  registered.set('hestia-weather-sky',class {});
+  const c=new Card();c.setConfig({format:'overview',show_events:true});c._view=view;c._render();
+  assert.match(c.shadowRoot.innerHTML,/<hestia-weather-sky><\/hestia-weather-sky>/);
+  assert.match(c.shadowRoot.innerHTML,/<hestia-frise><\/hestia-frise>/);
+});
+
+test('Synthèse seule : les autres cartes ne s’abonnent pas au flux météo',()=>{
+  let called=0;
+  for(const format of ['moon','sun-home','radars']){
+    const c=new Card();c.setConfig({format});c.hass={states:{},connection:{subscribeMessage(){called++;return Promise.resolve(()=>{});}}};
+  }
+  assert.equal(called,0);
 });
