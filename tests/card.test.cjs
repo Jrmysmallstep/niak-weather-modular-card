@@ -76,10 +76,21 @@ test('la carte consomme la commande websocket officielle version 1',async()=>{
   let requested,callback;
   const c=new Card();c.setConfig({format:'pressure'});
   c.hass={connection:{subscribeMessage(cb,msg){callback=cb;requested=msg;return Promise.resolve(()=>{});}}};
-  assert.equal(requested.type,'niak_weather/subscribe');
+  assert.equal(requested.type,'hestia_weather/subscribe');
   callback({version:1,view});
   assert.match(c.shadowRoot.innerHTML,/1[\u202f\s]?018/);
   await Promise.resolve();c.disconnectedCallback();
+});
+
+test('repli sur l’ancien domaine niak_weather si hestia_weather est inconnu',async()=>{
+  const asked=[];let callback;
+  const c=new Card();c.setConfig({format:'pressure'});
+  c.hass={connection:{subscribeMessage(cb,msg){asked.push(msg.type);if(msg.type==='hestia_weather/subscribe')return Promise.reject({code:'unknown_command'});callback=cb;return Promise.resolve(()=>{});}}};
+  await new Promise(r=>setTimeout(r,0));
+  assert.deepEqual(asked,['hestia_weather/subscribe','niak_weather/subscribe']);
+  callback({version:1,view});
+  assert.match(c.shadowRoot.innerHTML,/1[\u202f\s]?018/);
+  c.disconnectedCallback();
 });
 
 test('éditeur visuel déclaré',()=>{

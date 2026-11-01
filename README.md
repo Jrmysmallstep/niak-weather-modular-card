@@ -4,7 +4,7 @@
 
 **Version actuelle : 0.2.9-beta.2** (bêta, en cours de tests sur installations réelles).
 
-Projet communautaire **non officiel**. Il complète [Niak Weather de Niakman13](https://github.com/Niakman13/niak-weather-integration), sans remplacer ni modifier son intégration. Les cartes météo lisent ses données locales via le WebSocket `niak_weather/subscribe`.
+Projet communautaire **non officiel**. Il complète [Niak Weather (désormais Hestia Weather) de Niakman13](https://github.com/Niakman13/niak-weather-integration), sans remplacer ni modifier son intégration. Les cartes météo lisent ses données locales via le WebSocket `hestia_weather/subscribe` (repli automatique sur `niak_weather/subscribe` pour les anciennes installations).
 
 ## Installation HACS
 
@@ -214,7 +214,7 @@ Toutes les options n'ont pas d'effet sur tous les formats ; l'éditeur visuel af
 
 ## Compatibilité et limites
 
-- Les formats météo utilisent la version **1** du contrat de données `niak_weather/subscribe`. Une modification de ce contrat dans l'intégration officielle peut nécessiter une adaptation.
+- Les formats météo utilisent la version **1** du contrat de données `hestia_weather/subscribe`. Une modification de ce contrat dans l'intégration officielle peut nécessiter une adaptation.
 - Les capteurs et prévisions ne sont pas inventés si la source ne fournit aucune donnée.
 - La frise d'événements Niak est conservée lorsqu'elle est disponible : son animation continue entre les mises à jour. Sur ordinateur, elle se met en pause au survol.
 - Le ciel animé officiel et certains styles de la carte `full` dépendent de la structure frontend de Niak Weather.
