@@ -1,12 +1,12 @@
 /**
- * Niak Weather Modular Card — 0.2.9-beta.2
+ * Niak Weather Modular Card — 0.2.9-beta.3
  * Standalone dashboard card consuming the original Niak Weather websocket view.
  * Inspired by Niak Weather by Niakman13 (MIT); see LICENSE and README.md.
  * No Python integration replacement, cloud calls or external JavaScript dependencies.
  */
 (() => {
   'use strict';
-  const VERSION = '0.2.9-beta.2';
+  const VERSION = '0.2.9-beta.3';
   const ELEMENT = 'niak-weather-modular-card';
   const FORMATS = [
     ['full','Carte complète Niak Weather','Carte officielle complète, personnalisable, avec Lune facultative'],

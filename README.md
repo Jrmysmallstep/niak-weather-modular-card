@@ -2,7 +2,7 @@
 
 **Cartes météo indépendantes et personnalisables pour Home Assistant.**
 
-**Version actuelle : 0.2.9-beta.2** (bêta, en cours de tests sur installations réelles).
+**Version actuelle : 0.2.9-beta.3** (bêta, en cours de tests sur installations réelles).
 
 Projet communautaire **non officiel**. Il complète [Niak Weather (désormais Hestia Weather) de Niakman13](https://github.com/Niakman13/niak-weather-integration), sans remplacer ni modifier son intégration. Les cartes météo lisent ses données locales via le WebSocket `hestia_weather/subscribe` (repli automatique sur `niak_weather/subscribe` pour les anciennes installations).
 
