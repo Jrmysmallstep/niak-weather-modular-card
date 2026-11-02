@@ -1,4 +1,4 @@
-# Niak Weather Add-on 🌤️
+# Hestia Weather Add-on 🌤️
 
 **Add-on pour l'intégration [Hestia Weather](https://github.com/Niakman13/niak-weather-integration) (ex-Niak Weather) : Synthèse, Lune, Solar Mask et radars de pluie.**
 
@@ -20,19 +20,21 @@ Les couleurs suivent le thème Hestia Weather (`--hestia-*-color`, avec repli su
 ## Installation HACS
 
 1. Installer et configurer l'intégration **Hestia Weather** (nécessaire seulement pour la Synthèse).
-2. Dans **HACS → Dépôts personnalisés**, ajouter `https://github.com/Jrmysmallstep/niak-weather-modular-card`, catégorie **Tableau de bord (Dashboard)**.
-3. Installer, recharger l'interface, puis **Ajouter une carte → Niak Weather · …**.
+2. Dans **HACS → Dépôts personnalisés**, ajouter `https://github.com/Jrmysmallstep/hestia-weather-addon`, catégorie **Tableau de bord (Dashboard)**.
+3. Installer, recharger l'interface, puis **Ajouter une carte → Hestia Weather · …**.
 
-Si la ressource n'est pas ajoutée automatiquement : **Paramètres → Tableaux de bord → Ressources**, `/hacsfiles/niak-weather-modular-card/niak-weather-modular-card.js`, type **module JavaScript**. Sans release GitHub, HACS suit la branche `main` : utiliser **Retélécharger**, puis recharger le navigateur (dans l'appli mobile : Dépannage → Réinitialiser le cache du frontend).
+Si la ressource n'est pas ajoutée automatiquement : **Paramètres → Tableaux de bord → Ressources**, `/hacsfiles/hestia-weather-addon/hestia-weather-addon.js`, type **module JavaScript**. Sans release GitHub, HACS suit la branche `main` : utiliser **Retélécharger**, puis recharger le navigateur (dans l'appli mobile : Dépannage → Réinitialiser le cache du frontend).
 
-**Installation manuelle :** copier `dist/niak-weather-modular-card.js` dans `/config/www/` et ajouter la ressource `/local/niak-weather-modular-card.js`.
+**Installation manuelle :** copier `dist/hestia-weather-addon.js` dans `/config/www/` et ajouter la ressource `/local/hestia-weather-addon.js`.
 
-Toutes les cartes utilisent `type: custom:niak-weather-modular-card` et le paramètre `format`. Un éditeur visuel est disponible.
+> **Ancien nom :** le projet s'appelait *Niak Weather Add-on* (`custom:niak-weather-modular-card`). Cet ancien type de carte reste reconnu ; seule la ressource JavaScript change (`/hacsfiles/hestia-weather-addon/hestia-weather-addon.js`) après renommage du dépôt.
+
+Toutes les cartes utilisent `type: custom:hestia-weather-addon` et le paramètre `format`. Un éditeur visuel est disponible.
 
 ## Synthèse
 
 ```yaml
-type: custom:niak-weather-modular-card
+type: custom:hestia-weather-addon
 format: overview
 overview_layout: classic        # compact (défaut) ou classic
 temperature_position: left      # right (défaut) ou left
@@ -51,7 +53,7 @@ Le ciel animé (`hestia-weather-sky`) et la frise d'événements (`hestia-frise`
 Nécessite l'[intégration Solar Mask](https://github.com/38decibel/Solar-Mask) et sa [carte](https://github.com/38decibel/Solar-Mask-Card).
 
 ```yaml
-type: custom:niak-weather-modular-card
+type: custom:hestia-weather-addon
 format: sun-home
 sun_difference_entity: sensor.difference_de_soleil
 sun_duration_entity: sensor.sunterrasse_sun_duration
@@ -69,7 +71,7 @@ Aube, lever, coucher et crépuscule viennent de `sun.sun`. Le diagramme Solar Ma
 ## Lune
 
 ```yaml
-type: custom:niak-weather-modular-card
+type: custom:hestia-weather-addon
 format: moon
 moon_position: left               # left ou right
 moon_visual_mode: original        # original, generated, image, svg
@@ -83,7 +85,7 @@ show_stats: true
 ## Radars de pluie (par lien)
 
 ```yaml
-type: custom:niak-weather-modular-card
+type: custom:hestia-weather-addon
 format: radars
 radar_layout: tabs               # grid, stack ou tabs
 radar_height: 420
@@ -106,7 +108,7 @@ L'éditeur n'affiche que les réglages utiles à chaque carte.
 
 ## Développement
 
-Source : `src/niak-weather-modular-card.js` ; `dist/niak-weather-modular-card.js` est celui que HACS installe et doit rester synchronisé.
+Source : `src/hestia-weather-addon.js` ; `dist/hestia-weather-addon.js` est celui que HACS installe et doit rester synchronisé.
 
 ```bash
 npm test

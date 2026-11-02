@@ -1,5 +1,5 @@
 /**
- * Niak Weather Add-on — 0.3.0-beta.1 (carte « niak-weather-modular-card »)
+ * Hestia Weather Add-on — 0.3.0-beta.1 (carte « hestia-weather-addon », ancien nom « niak-weather-modular-card » toujours reconnu)
  * Add-on de l'intégration Hestia Weather (ex-Niak Weather) : Synthèse, Lune, Solar Mask et radars de pluie (par lien).
  * Les autres cartes (vent, pluie, pression, air, pollens, prévisions…) sont fournies par l'intégration elle-même.
  * Inspired by Niak Weather by Niakman13 (MIT); see LICENSE and README.md.
@@ -8,7 +8,8 @@
 (() => {
   'use strict';
   const VERSION = '0.3.0-beta.1';
-  const ELEMENT = 'niak-weather-modular-card';
+  const ELEMENT = 'hestia-weather-addon';
+  const LEGACY_ELEMENT = 'niak-weather-modular-card';
   // Integration websocket domain: Hestia Weather (current name), then Niak Weather (former name).
   const WS_DOMAINS = ['hestia_weather', 'niak_weather'];
   const FORMATS = [
@@ -453,8 +454,8 @@
   class NiakModularCard extends HTMLElement {
     constructor(){super();this.attachShadow({mode:'open'});this._config={type:`custom:${ELEMENT}`,format:'overview'};this._view=null;this._error='';this._hass=null;this._connection=null;this._subscription=null;this._requestedEntry=null;this._generation=0;this._renderKey='';this._onEvent=e=>{const target=e.composedPath().find(x=>x?.getAttribute?.('data-entity'));const entity=target?.getAttribute('data-entity');if(entity){this.dispatchEvent(new CustomEvent('hass-more-info',{detail:{entityId:entity},bubbles:true,composed:true}));}};this.shadowRoot.addEventListener('click',this._onEvent);this.shadowRoot.addEventListener('click',e=>{const tab=e.composedPath?.().find(x=>x?.getAttribute?.('data-radar-tab'));if(tab){this._radarTab=tab.getAttribute('data-radar-tab');this._updateRadarTabs();}});}
     static getStubConfig(){return {type:`custom:${ELEMENT}`,format:'overview'};}
-    static getConfigElement(){return document.createElement('niak-weather-modular-editor');}
-    setConfig(config){if(!config||!ACCEPTED.has(config.format||'overview'))throw new Error('Niak Weather Add-on : format inconnu.');const old=this._config;const cc=normalize(config);this._config={...DEFAULTS,...cc};if(old?.entry_id!==this._config.entry_id){this._view=null;this._stopSubscription();}this._render();this._subscribe();}
+    static getConfigElement(){return document.createElement('hestia-weather-addon-editor');}
+    setConfig(config){if(!config||!ACCEPTED.has(config.format||'overview'))throw new Error('Hestia Weather Add-on : format inconnu.');const old=this._config;const cc=normalize(config);this._config={...DEFAULTS,...cc};if(old?.entry_id!==this._config.entry_id){this._view=null;this._stopSubscription();}this._render();this._subscribe();}
     set hass(hass){const differentConnection=this._connection && hass?.connection!==this._connection;this._hass=hass;if(differentConnection){this._view=null;this._stopSubscription();}this._subscribe();if(['moon','sun-home','radars'].includes(this._config.format))this._render();}
     get hass(){return this._hass;}
     connectedCallback(){this._render();this._subscribe();}
@@ -462,7 +463,7 @@
     getCardSize(){return this._config.format==='moon'||this._config.format==='overview'?5:4;}
     getGridOptions(){if(this._config.format==='sun-home')return {columns:4,rows:'auto',min_columns:4};return {columns:12,rows:'auto',min_columns:3};}
     _stopSubscription(){this._generation++;const sub=this._subscription;this._subscription=null;this._requestedEntry=null;if(sub){sub.then(stop=>typeof stop==='function'?stop():null).catch(()=>{});}}
-    _subscribe(){if(this._config?.format!=='overview'){if(this._subscription)this._stopSubscription();return;}if(!this.isConnected||!this._hass?.connection||!this._config)return;const entry=this._config.entry_id||'';if(this._subscription&&this._requestedEntry===entry&&this._connection===this._hass.connection)return;this._stopSubscription();this._connection=this._hass.connection;this._requestedEntry=entry;this._error='';const gen=this._generation;const body=entry?{entry_id:entry}:{};const onEvent=data=>{if(gen!==this._generation)return;if(data.reload){this._view=null;this._error='La configuration Niak Weather a changé. Rechargez la page.';}else if(data.version!==1){this._error='Version de données Niak Weather non compatible (attendue : 1).';this._view=null;}else{this._view=data.view;this._error='';}this._render();};const subscribeTo=domain=>this._connection.subscribeMessage(onEvent,{type:domain+'/subscribe',...body});const pending=subscribeTo(WS_DOMAINS[0]).catch(e=>{if(e?.code!=='unknown_command')throw e;return subscribeTo(WS_DOMAINS[1]);});this._subscription=pending;Promise.resolve(pending).catch(e=>{if(gen!==this._generation)return;this._subscription=null;const msg=e?.code==='choose_entry'?'Plusieurs lieux Hestia Weather : indiquez entry_id dans la carte.':e?.code==='not_configured'?'Configurez d’abord l’intégration Hestia Weather.':e?.code==='unknown_command'?'Intégration Hestia Weather (ex-Niak Weather) introuvable.':e?.message||'Impossible de recevoir les données Niak Weather.';this._error=msg;this._render();});}
+    _subscribe(){if(this._config?.format!=='overview'){if(this._subscription)this._stopSubscription();return;}if(!this.isConnected||!this._hass?.connection||!this._config)return;const entry=this._config.entry_id||'';if(this._subscription&&this._requestedEntry===entry&&this._connection===this._hass.connection)return;this._stopSubscription();this._connection=this._hass.connection;this._requestedEntry=entry;this._error='';const gen=this._generation;const body=entry?{entry_id:entry}:{};const onEvent=data=>{if(gen!==this._generation)return;if(data.reload){this._view=null;this._error='La configuration Hestia Weather a changé. Rechargez la page.';}else if(data.version!==1){this._error='Version de données Hestia Weather non compatible (attendue : 1).';this._view=null;}else{this._view=data.view;this._error='';}this._render();};const subscribeTo=domain=>this._connection.subscribeMessage(onEvent,{type:domain+'/subscribe',...body});const pending=subscribeTo(WS_DOMAINS[0]).catch(e=>{if(e?.code!=='unknown_command')throw e;return subscribeTo(WS_DOMAINS[1]);});this._subscription=pending;Promise.resolve(pending).catch(e=>{if(gen!==this._generation)return;this._subscription=null;const msg=e?.code==='choose_entry'?'Plusieurs lieux Hestia Weather : indiquez entry_id dans la carte.':e?.code==='not_configured'?'Configurez d’abord l’intégration Hestia Weather.':e?.code==='unknown_command'?'Intégration Hestia Weather (ex-Niak Weather) introuvable.':e?.message||'Impossible de recevoir les données Hestia Weather.';this._error=msg;this._render();});}
     _syncEmbeddedWidgets(c){
       // Keep the Lit timeline instance alive. Its internal 4.5s timer must survive every incoming weather update.
       this.shadowRoot.querySelectorAll('hestia-frise,niak-frise').forEach(f=>{
@@ -658,23 +659,29 @@
     }
   }
   if(!customElements.get(ELEMENT))customElements.define(ELEMENT,NiakModularCard);
-  if(!customElements.get('niak-weather-modular-editor'))customElements.define('niak-weather-modular-editor',NiakModularEditor);
+  // Ancien nom de carte (custom:niak-weather-modular-card) : toujours accepté, sans apparaître dans le sélecteur.
+  if(!customElements.get(LEGACY_ELEMENT))customElements.define(LEGACY_ELEMENT,class extends NiakModularCard{});
+  if(!customElements.get('hestia-weather-addon-editor'))customElements.define('hestia-weather-addon-editor',NiakModularEditor);
   window.customCards=window.customCards||[];
   for(const [format,name,description] of FORMATS){
-    const tag=`niak-weather-modular-${format}-card`;
-    if(!customElements.get(tag))customElements.define(tag,class extends NiakModularCard {
+    const tag=`hestia-weather-addon-${format}-card`;
+    const make=()=>class extends NiakModularCard {
       static getStubConfig(){return {type:`custom:${ELEMENT}`,format};}
       setConfig(config){super.setConfig({format,...config});}
-    });
-    if(!window.customCards.some(x=>x.type===tag))window.customCards.push({type:tag,name:`Niak Weather · ${name}`,description,preview:true});
+    };
+    if(!customElements.get(tag))customElements.define(tag,make());
+    const oldTag=`niak-weather-modular-${format}-card`;
+    if(!customElements.get(oldTag))customElements.define(oldTag,make());
+    if(!window.customCards.some(x=>x.type===tag))window.customCards.push({type:tag,name:`Hestia Weather · ${name}`,description,preview:true});
   }
   // Former individual card types keep working on existing dashboards: they explain where the card went.
   for(const legacy of [...Object.keys(LEGACY),...RETIRED]){
-    const tag=`niak-weather-modular-${legacy}-card`;
-    if(!customElements.get(tag))customElements.define(tag,class extends NiakModularCard{
-      static getStubConfig(){return {type:`custom:${ELEMENT}`,format:LEGACY[legacy]||'overview'};}
-      setConfig(config){super.setConfig({format:legacy,...config});}
-    });
+    for(const tag of [`hestia-weather-addon-${legacy}-card`,`niak-weather-modular-${legacy}-card`]){
+      if(!customElements.get(tag))customElements.define(tag,class extends NiakModularCard{
+        static getStubConfig(){return {type:`custom:${ELEMENT}`,format:LEGACY[legacy]||'overview'};}
+        setConfig(config){super.setConfig({format:legacy,...config});}
+      });
+    }
   }
-  console.info(`%cNIAK WEATHER ADD-ON%c ${VERSION}`,'color:#8798d2;font-weight:bold','color:inherit');
+  console.info(`%cHESTIA WEATHER ADD-ON%c ${VERSION}`,'color:#8798d2;font-weight:bold','color:inherit');
 })();

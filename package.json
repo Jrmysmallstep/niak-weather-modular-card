@@ -1,8 +1,8 @@
 {
-  "name": "niak-weather-modular-card",
+  "name": "hestia-weather-addon",
   "version": "0.3.0-beta.1",
   "private": true,
-  "description": "Niak Weather add-on: Synthèse, Lune, Solar Mask and rain radars (by link) for Hestia Weather",
+  "description": "Hestia Weather add-on: Synthèse, Lune, Solar Mask and rain radars (by link) for Hestia Weather",
   "license": "MIT",
   "scripts": {
     "build": "node scripts/build.cjs",

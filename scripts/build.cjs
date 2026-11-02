@@ -1,8 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname,'..');
-const src = path.join(root,'src','niak-weather-modular-card.js');
-const dst = path.join(root,'dist','niak-weather-modular-card.js');
+const src = path.join(root,'src','hestia-weather-addon.js');
+const dst = path.join(root,'dist','hestia-weather-addon.js');
 const content = fs.readFileSync(src);
 if(process.argv.includes('--verify')) {
   if(!fs.existsSync(dst)||!content.equals(fs.readFileSync(dst))) {
@@ -12,5 +12,5 @@ if(process.argv.includes('--verify')) {
 } else {
   fs.mkdirSync(path.dirname(dst),{recursive:true});
   fs.writeFileSync(dst,content);
-  console.log('dist/niak-weather-modular-card.js mis à jour');
+  console.log('dist/hestia-weather-addon.js mis à jour');
 }

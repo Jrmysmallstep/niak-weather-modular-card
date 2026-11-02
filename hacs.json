@@ -1,5 +1,5 @@
 {
-  "name": "Niak Weather Add-on",
-  "filename": "niak-weather-modular-card.js",
+  "name": "Hestia Weather Add-on",
+  "filename": "hestia-weather-addon.js",
   "render_readme": true
 }

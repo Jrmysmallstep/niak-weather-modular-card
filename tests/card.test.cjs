@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const script = fs.readFileSync(path.join(__dirname, '..','src','niak-weather-modular-card.js'),'utf8');
+const script = fs.readFileSync(path.join(__dirname, '..','src','hestia-weather-addon.js'),'utf8');
 const registered = new Map();
 class HTMLElementMock {
   constructor() { this.isConnected = true; this.shadowRoot=null; this.events=[]; }
@@ -16,7 +16,7 @@ class HTMLElementMock {
 }
 const ctx = {HTMLElement:HTMLElementMock, customElements:{get:(n)=>registered.get(n),define:(n,v)=>registered.set(n,v)},window:{customCards:[]},console:{info(){}},document:{createElement(tag){return new (registered.get(tag))();}},CustomEvent:class {constructor(type,init){this.type=type;this.detail=init?.detail;}},Intl,Date,Number,Math,Set,Array,URL};
 vm.runInNewContext(script,ctx,{timeout:2500});
-const Card=registered.get('niak-weather-modular-card');
+const Card=registered.get('hestia-weather-addon');
 
 const t=Math.floor(Date.now()/1000),series=(base)=>Array.from({length:18},(_,i)=>[t-(17-i)*600,base+(i%4)]);
 const forecast=Array.from({length:18},(_,i)=>({hour:(8+i)%24,day:Math.floor((8+i)/24),temperature:10+i/2,precipitation:i%3?0:0.4,wind:3+i%4,icon:'mdi:weather-cloudy',conditionLabel:'Couvert'}));
@@ -461,14 +461,15 @@ test('Soleil : indicateurs allégés sans fond coloré ni sous-texte',()=>{
 
 test('add-on : seulement Synthèse, Lune, Soleil et Radars dans le sélecteur',()=>{
   assert.deepEqual(ctx.window.customCards.map(x=>x.type).sort(),
-    ['niak-weather-modular-moon-card','niak-weather-modular-overview-card','niak-weather-modular-radars-card','niak-weather-modular-sun-home-card']);
+    ['hestia-weather-addon-moon-card','hestia-weather-addon-overview-card','hestia-weather-addon-radars-card','hestia-weather-addon-sun-home-card']);
 });
 
 test('anciens formats : message clair vers la carte hestia-weather-card, sans erreur',()=>{
   for(const f of ['full','wind','rain','pressure','air','pollen','hours','days','comfort','extras','bulletin','events']){
     const c=new Card();c.setConfig({format:f});c._render();
     assert.match(c.shadowRoot.innerHTML,/hestia-weather-card/,f);
-    assert.ok(registered.get('niak-weather-modular-'+f+'-card'),f);
+    assert.ok(registered.get('hestia-weather-addon-'+f+'-card'),f);
+    assert.ok(registered.get('niak-weather-modular-'+f+'-card'),'ancien nom '+f);
   }
   assert.throws(()=>new Card().setConfig({format:'inconnu'}));
 });
@@ -496,4 +497,9 @@ test('Synthèse seule : les autres cartes ne s’abonnent pas au flux météo',(
 test('overview shows the events timeline by default', () => {
   const c=new Card();c.setConfig({format:'overview'});c._view=view;c._render();
   assert.ok(c.shadowRoot.innerHTML.includes('ov-events'));
+});
+
+test('ancien nom de carte niak-weather-modular-card toujours enregistré',()=>{
+  assert.ok(registered.get('niak-weather-modular-card'));
+  assert.ok(registered.get('niak-weather-modular-overview-card'));
 });
