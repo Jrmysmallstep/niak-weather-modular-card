@@ -492,3 +492,8 @@ test('Synthèse seule : les autres cartes ne s’abonnent pas au flux météo',(
   }
   assert.equal(called,0);
 });
+
+test('overview shows the events timeline by default', () => {
+  const c=new Card();c.setConfig({format:'overview'});c._view=view;c._render();
+  assert.ok(c.shadowRoot.innerHTML.includes('ov-events'));
+});

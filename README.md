@@ -39,7 +39,7 @@ temperature_position: left      # right (défaut) ou left
 show_bulletin: true
 show_temp_range: true
 show_temp_trend: true
-show_events: false
+show_events: true
 show_animations: true
 # entry_id: ...                 # seulement si plusieurs lieux Hestia Weather
 ```
